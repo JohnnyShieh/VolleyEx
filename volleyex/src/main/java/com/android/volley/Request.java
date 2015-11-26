@@ -109,10 +109,10 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     private Object mTag;
 
     // added by Johnny Shieh : JohnnyShieh17@gmail.com
-    /** The TTL of this cache, -1 indicates it will use the info of Cache-Control */
+    /** The default TTL of this cache when the response doesn't have Cache-Control, it is useless if the value <= 0. */
     private long mTtl;
 
-    /** The Soft TTL of this cache, -1 indicates it will use the info of Cache-Control */
+    /** The default Soft TTL of this cache when the response doesn't have Cache-Control, it is useless if the value <= 0. */
     private long mSoftTtl;
     // added end
 
@@ -526,6 +526,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /**
      * Set the time for this cache to live.
+     * You may also need use {@link #setSoftTtl(long)}
      */
     public void setTtl(long ttl) {
         mTtl = ttl;
@@ -540,6 +541,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /**
      * Set the soft time for this cache to live.
+     * You may also need use {@link #setTtl(long)}
      */
     public void setSoftTtl(long softTtl) {
         mSoftTtl = softTtl;

@@ -123,18 +123,23 @@ public class HttpHeaderParser {
     }*/
 
     // modify by Johnny Shieh : JohnnyShieh17@gmail.com
-    // add param ttl, so cache's ttl can be modified manually.
-    // add param softTtl, so cache's softTtl can be modified manually.
+    // use the strategy of the request when response headers does not have cache control.
+    // add param ttl, it will be used when response doesn't have Cache-Control.
+    // add param softTtl, it will be used when response doesn't have Cache-Control.
     /**
      * Extracts a {@link Cache.Entry} from a {@link NetworkResponse}.
      *
      * @param response The network response to parse headers from
      *
-     * @param ttl The TTL of the cache, -1 indicate it decided by Cache-Control header
-     * @param softTtl The Soft TTL of the cache, -1 indicate it decided by Cache-Control header
+     * @param ttl The TTL of the cache, it is useful only when {value > 0} and finalExpire = 0
+     * @param softTtl The Soft TTL of the cache, it is useful only when {value > 0} and softExpire = 0
      * @return a cache entry for the given response, or null if the response is not cacheable.
      */
     public static Cache.Entry parseCacheHeaders(NetworkResponse response, boolean shouldCache, long ttl, long softTtl) {
+        // return null if shouldCache is false, whether response has Cache-Control or not.
+        if(!shouldCache) {
+            return null;
+        }
         long now = System.currentTimeMillis();
 
         Map<String, String> headers = response.headers;
@@ -157,32 +162,34 @@ public class HttpHeaderParser {
             serverDate = parseDateAsEpoch(headerValue);
         }
 
-        if(shouldCache) {
-            headerValue = headers.get("Cache-Control");
-            if (headerValue != null) {
-                hasCacheControl = true;
-                String[] tokens = headerValue.split(",");
-                for (int i = 0; i < tokens.length; i++) {
-                    String token = tokens[i].trim();
-                    if (token.equals("no-cache") || token.equals("no-store")) {
+        headerValue = headers.get("Cache-Control");
+        if (headerValue != null) {
+            hasCacheControl = true;
+            String[] tokens = headerValue.split(",");
+            for (int i = 0; i < tokens.length; i++) {
+                String token = tokens[i].trim();
+                if (token.equals("no-cache") || token.equals("no-store")) {
+                    // Use ttl as cache's expire time when Cache-Control is no-cache.
+                    if(ttl > 0) {
+                        break;
+                    }else {
                         return null;
-                    } else if (token.startsWith("max-age=")) {
-                        try {
-                            maxAge = Long.parseLong(token.substring(8));
-                        } catch (Exception e) {
-                        }
-                    } else if (token.startsWith("stale-while-revalidate=")) {
-                        try {
-                            staleWhileRevalidate = Long.parseLong(token.substring(23));
-                        } catch (Exception e) {
-                        }
-                    } else if (token.equals("must-revalidate") || token.equals("proxy-revalidate")) {
-                        mustRevalidate = true;
                     }
+                } else if (token.startsWith("max-age=")) {
+                    try {
+                        maxAge = Long.parseLong(token.substring(8));
+                    } catch (Exception e) {
+                    }
+                } else if (token.startsWith("stale-while-revalidate=")) {
+                    try {
+                        staleWhileRevalidate = Long.parseLong(token.substring(23));
+                    } catch (Exception e) {
+                    }
+                } else if (token.equals("must-revalidate") || token.equals("proxy-revalidate")) {
+                    mustRevalidate = true;
                 }
             }
         }
-
 
         headerValue = headers.get("Expires");
         if (headerValue != null) {
@@ -198,23 +205,19 @@ public class HttpHeaderParser {
 
         // Cache-Control takes precedence over an Expires header, even if both exist and Expires
         // is more restrictive.
-        if(shouldCache) {
-            if (hasCacheControl) {
-                softExpire = now + maxAge * 1000;
-                finalExpire = mustRevalidate
-                    ? softExpire
-                    : softExpire + staleWhileRevalidate * 1000;
-            } else if (serverDate > 0 && serverExpires >= serverDate) {
-                // Default semantic for Expire header in HTTP specification is softExpire.
-                softExpire = now + (serverExpires - serverDate);
-                finalExpire = softExpire;
-            }
-            if(ttl > 0) {
-                finalExpire = now + ttl;
-            }
-            if(softTtl > 0) {
-                softExpire = now + softTtl;
-            }
+        if (hasCacheControl) {
+            softExpire = now + maxAge * 1000;
+            finalExpire = mustRevalidate
+                ? softExpire
+                : softExpire + staleWhileRevalidate * 1000;
+        } else if (serverDate > 0 && serverExpires >= serverDate) {
+            // Default semantic for Expire header in HTTP specification is softExpire.
+            softExpire = now + (serverExpires - serverDate);
+            finalExpire = softExpire;
+        } else if (ttl > 0) {
+            // There not exist expire header in HTTP specification, so use ttl param.
+            softExpire = softTtl > 0 ? (now + softTtl) : softExpire;
+            finalExpire = now + ttl;
         }
 
         Cache.Entry entry = new Cache.Entry();
