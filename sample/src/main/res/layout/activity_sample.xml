@@ -11,7 +11,21 @@
     tools:context=".SampleActivity">
 
     <TextView
-        android:text="Hello World!"
+        android:id="@+id/load_btn"
+        android:text="点击加载图片"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="35dp"/>
+    <ImageView
+        android:id="@+id/net_image"
+        android:layout_width="500dp"
+        android:layout_height="300dp"
+        android:layout_marginTop="30dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/load_btn"
+        android:scaleType="centerInside"
+        android:background="@drawable/background_rect_stroke_2"/>
+
 </RelativeLayout>

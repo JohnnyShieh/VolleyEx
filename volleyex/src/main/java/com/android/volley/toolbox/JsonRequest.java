@@ -73,8 +73,12 @@ public abstract class JsonRequest<T> extends Request<T> {
         }
     }
 
-    @Override
-    abstract protected Response<T> parseNetworkResponse(NetworkResponse response);
+    /*@Override
+    abstract protected Response<T> parseNetworkResponse(NetworkResponse response);*/
+
+    // modified by Johnny Shieh : JohnnyShieh17@gamil.com
+    abstract protected T parseResponseData(NetworkResponse response) throws Exception;
+    // modified end
 
     /**
      * @deprecated Use {@link #getBodyContentType()}.

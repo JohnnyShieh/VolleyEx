@@ -22,6 +22,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import com.android.volley.VolleyLog.MarkerLog;
+import com.android.volley.toolbox.HttpHeaderParser;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -106,6 +107,14 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /** An opaque token tagging this request; used for bulk cancellation. */
     private Object mTag;
+
+    // added by Johnny Shieh : JohnnyShieh17@gmail.com
+    /** The TTL of this cache, -1 indicates it will use the info of Cache-Control */
+    private long mTtl;
+
+    /** The Soft TTL of this cache, -1 indicates it will use the info of Cache-Control */
+    private long mSoftTtl;
+    // added end
 
     /**
      * Creates a new request with the given URL and error listener.  Note that
@@ -507,6 +516,36 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         return mShouldCache;
     }
 
+    // added by Johnny Shieh : JohnnyShieh17@gmail.com
+    /**
+     * Returns the TTL of the cache.
+     */
+    public long getTtl() {
+        return mTtl;
+    }
+
+    /**
+     * Set the time for this cache to live.
+     */
+    public void setTtl(long ttl) {
+        mTtl = ttl;
+    }
+
+    /**
+     * Returns the Soft TTL of the cache.
+     */
+    public long getSoftTtl() {
+        return mSoftTtl;
+    }
+
+    /**
+     * Set the soft time for this cache to live.
+     */
+    public void setSoftTtl(long softTtl) {
+        mSoftTtl = softTtl;
+    }
+    // added end
+
     /**
      * Priority values.  Requests will be processed from higher priorities to
      * lower priorities, in FIFO order.
@@ -556,6 +595,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         return mResponseDelivered;
     }
 
+    /*
     /**
      * Subclasses must implement this to parse the raw network response
      * and return an appropriate response type. This method will be
@@ -564,7 +604,41 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * @param response Response from the network
      * @return The parsed response, or null in the case of an error
      */
-    abstract protected Response<T> parseNetworkResponse(NetworkResponse response);
+    /*abstract protected Response<T> parseResponseData(NetworkResponse response);*/
+
+    // modified by Johnny Shieh : JohnnyShieh17@gamil.com
+    /**
+     * Subclasses must implement this to parse the raw network response
+     * and return an appropriate response type. This method will be
+     * called from a worker thread.
+     *
+     * @param response Response from the network
+     * @return The parsed data, or null in the case of an error
+     */
+    abstract protected T parseResponseData(NetworkResponse response) throws Exception;
+
+    /**
+     * Parse the raw network response and return an appropriate response type.
+     * This method will be called from a worker thread. The response will not
+     * be delivered if you return null.
+     * it is not advised to overload this method instead you'd better
+     * implement {@link #parseNetworkResponse(NetworkResponse)}
+     *
+     * @param response Response from the network
+     * @return The parsed response, or null in the case of an error
+     */
+    protected Response<T> parseNetworkResponse(NetworkResponse response) {
+        try {
+            T data = parseResponseData(response);
+            if(null == data) {
+                return Response.error(new ParseError(response));
+            }
+            return Response.success(data, HttpHeaderParser.parseCacheHeaders(response, mShouldCache, mTtl, mSoftTtl));
+        }catch (Exception e) {
+            return Response.error(new ParseError(e));
+        }
+    }
+    // modified end
 
     /**
      * Subclasses can override this method to parse 'networkError' and return a more specific error.

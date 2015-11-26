@@ -1,6 +1,6 @@
 1. 使用常驻线程or线程池？
 
-2. cache的更新周期和soft ttl
+2. cache的更新周期和soft ttl  ^_^
 
 3. 请求重试问题
 

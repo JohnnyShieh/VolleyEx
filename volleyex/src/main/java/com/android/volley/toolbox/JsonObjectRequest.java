@@ -80,7 +80,7 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
     public JsonObjectRequest(int method, String url, JSONObject jsonRequest,
             Listener<JSONObject> listener, ErrorListener errorListener) {
         super(method, url, (jsonRequest == null) ? null : jsonRequest.toString(), listener,
-                errorListener);
+            errorListener);
     }
 
     /**
@@ -95,17 +95,26 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
                 listener, errorListener);
     }
 
-    @Override
+    /*@Override
     protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
         try {
-            String jsonString = new String(response.data,
-                    HttpHeaderParser.parseCharset(response.headers, PROTOCOL_CHARSET));
+            String jsonString =
+                new String(response.data, HttpHeaderParser.parseCharset(response.headers));
             return Response.success(new JSONObject(jsonString),
-                    HttpHeaderParser.parseCacheHeaders(response));
+                HttpHeaderParser.parseCacheHeaders(response));
         } catch (UnsupportedEncodingException e) {
             return Response.error(new ParseError(e));
         } catch (JSONException je) {
             return Response.error(new ParseError(je));
         }
+    }*/
+
+    // modified by Johnny Shieh : JohnnyShieh17@gamil.com
+    @Override
+    protected JSONObject parseResponseData(NetworkResponse response) throws Exception {
+        String jsonString = new String(response.data,
+            HttpHeaderParser.parseCharset(response.headers, PROTOCOL_CHARSET));
+        return new JSONObject(jsonString);
     }
+    // modified end
 }

@@ -96,7 +96,7 @@ public class JsonArrayRequest extends JsonRequest<JSONArray> {
     public JsonArrayRequest(int method, String url, JSONObject jsonRequest,
                             Listener<JSONArray> listener, ErrorListener errorListener) {
         super(method, url, (jsonRequest == null) ? null : jsonRequest.toString(), listener,
-                errorListener);
+            errorListener);
     }
 
     /**
@@ -123,7 +123,7 @@ public class JsonArrayRequest extends JsonRequest<JSONArray> {
                 listener, errorListener);
     }
 
-    @Override
+    /*@Override
     protected Response<JSONArray> parseNetworkResponse(NetworkResponse response) {
         try {
             String jsonString = new String(response.data,
@@ -135,5 +135,14 @@ public class JsonArrayRequest extends JsonRequest<JSONArray> {
         } catch (JSONException je) {
             return Response.error(new ParseError(je));
         }
+    }*/
+
+    // modified by Johnny Shieh : JohnnyShieh17@gamil.com
+    @Override
+    protected JSONArray parseResponseData(NetworkResponse response) throws Exception {
+        String jsonString = new String(response.data,
+            HttpHeaderParser.parseCharset(response.headers, PROTOCOL_CHARSET));
+        return new JSONArray(jsonString);
     }
+    // modified end
 }

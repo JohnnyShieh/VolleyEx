@@ -151,7 +151,7 @@ public class ImageRequest extends Request<Bitmap> {
         return resized;
     }
 
-    @Override
+    /*@Override
     protected Response<Bitmap> parseNetworkResponse(NetworkResponse response) {
         // Serialize all decode on a global lock to reduce concurrent heap usage.
         synchronized (sDecodeLock) {
@@ -162,12 +162,77 @@ public class ImageRequest extends Request<Bitmap> {
                 return Response.error(new ParseError(e));
             }
         }
+    }*/
+
+    /*
+    /**
+     * The real guts of parseNetworkResponse. Broken out for readability.
+     */
+    /*private Response<Bitmap> doParse(NetworkResponse response) {
+        byte[] data = response.data;
+        BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
+        Bitmap bitmap = null;
+        if (mMaxWidth == 0 && mMaxHeight == 0) {
+            decodeOptions.inPreferredConfig = mDecodeConfig;
+            bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
+        } else {
+            // If we have to resize this image, first get the natural bounds.
+            decodeOptions.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
+            int actualWidth = decodeOptions.outWidth;
+            int actualHeight = decodeOptions.outHeight;
+
+            // Then compute the dimensions we would ideally like to decode to.
+            int desiredWidth = getResizedDimension(mMaxWidth, mMaxHeight,
+                actualWidth, actualHeight);
+            int desiredHeight = getResizedDimension(mMaxHeight, mMaxWidth,
+                actualHeight, actualWidth);
+
+            // Decode to the nearest power of two scaling factor.
+            decodeOptions.inJustDecodeBounds = false;
+            // TODO(ficus): Do we need this or is it okay since API 8 doesn't support it?
+            // decodeOptions.inPreferQualityOverSpeed = PREFER_QUALITY_OVER_SPEED;
+            decodeOptions.inSampleSize =
+                findBestSampleSize(actualWidth, actualHeight, desiredWidth, desiredHeight);
+            Bitmap tempBitmap =
+                BitmapFactory.decodeByteArray(data, 0, data.length, decodeOptions);
+
+            // If necessary, scale down to the maximal acceptable size.
+            if (tempBitmap != null && (tempBitmap.getWidth() > desiredWidth ||
+                tempBitmap.getHeight() > desiredHeight)) {
+                bitmap = Bitmap.createScaledBitmap(tempBitmap,
+                    desiredWidth, desiredHeight, true);
+                tempBitmap.recycle();
+            } else {
+                bitmap = tempBitmap;
+            }
+        }
+
+        if (bitmap == null) {
+            return Response.error(new ParseError(response));
+        } else {
+            return Response.success(bitmap, HttpHeaderParser.parseCacheHeaders(response));
+        }
+    }*/
+
+    // modified by Johnny Shieh : JohnnyShieh17@gamil.com
+    @Override
+    protected Bitmap parseResponseData(NetworkResponse response) throws Exception {
+        // Serialize all decode on a global lock to reduce concurrent heap usage.
+        synchronized (sDecodeLock) {
+            try {
+                return doParse(response);
+            } catch (OutOfMemoryError e) {
+                VolleyLog.e("Caught OOM for %d byte image, url=%s", response.data.length, getUrl());
+                throw e;
+            }
+        }
     }
 
     /**
      * The real guts of parseNetworkResponse. Broken out for readability.
      */
-    private Response<Bitmap> doParse(NetworkResponse response) {
+    private Bitmap doParse(NetworkResponse response) {
         byte[] data = response.data;
         BitmapFactory.Options decodeOptions = new BitmapFactory.Options();
         Bitmap bitmap = null;
@@ -207,12 +272,9 @@ public class ImageRequest extends Request<Bitmap> {
             }
         }
 
-        if (bitmap == null) {
-            return Response.error(new ParseError(response));
-        } else {
-            return Response.success(bitmap, HttpHeaderParser.parseCacheHeaders(response));
-        }
+        return bitmap;
     }
+    // modified end
 
     @Override
     protected void deliverResponse(Bitmap response) {

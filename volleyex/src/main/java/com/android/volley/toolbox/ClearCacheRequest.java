@@ -64,6 +64,12 @@ public class ClearCacheRequest extends Request<Object> {
         return null;
     }
 
+    // added by Johnny Shieh : JohnnyShieh17@gamil.com
+    protected Object parseResponseData(NetworkResponse response) throws Exception {
+        return null;
+    }
+    // added end
+
     @Override
     protected void deliverResponse(Object response) {
     }

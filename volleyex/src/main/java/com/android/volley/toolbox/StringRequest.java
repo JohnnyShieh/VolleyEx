@@ -68,7 +68,7 @@ public class StringRequest extends Request<String> {
         }
     }
 
-    @Override
+    /*@Override
     protected Response<String> parseNetworkResponse(NetworkResponse response) {
         String parsed;
         try {
@@ -77,5 +77,13 @@ public class StringRequest extends Request<String> {
             parsed = new String(response.data);
         }
         return Response.success(parsed, HttpHeaderParser.parseCacheHeaders(response));
+    }*/
+
+    // modified by Johnny Shieh : JohnnyShieh17@gamil.com
+    @Override
+    protected String parseResponseData(NetworkResponse response) throws Exception {
+        return new String(response.data, HttpHeaderParser.parseCharset(response.headers));
     }
+    // modified end
+
 }
