@@ -61,6 +61,23 @@ public interface Cache {
      */
     public void clear();
 
+    // added by Johnny Shieh : JohnnyShieh17@gamil.com
+    /**
+     * Get the size of cache.
+     */
+    public long size();
+
+    /**
+     * Flush the cache.
+     */
+    public void flush();
+
+    /**
+     * Close the cache.
+     */
+    public void close();
+    // added end
+
     /**
      * Data and metadata for an entry returned by the cache.
      */

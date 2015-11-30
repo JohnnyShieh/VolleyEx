@@ -2,8 +2,8 @@ package com.johnnyshieh.volleyex;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.VolleyEx;
 import com.android.volley.toolbox.ImageRequest;
-import com.android.volley.toolbox.Volley;
 
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -30,16 +30,22 @@ public class SampleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
 
-        mRequestQueue = Volley.newRequestQueue(this);
+        mRequestQueue = VolleyEx.newRequestQueue(this);
 
         ButterKnife.bind(this);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mRequestQueue.onPause();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         ButterKnife.unbind(this);
-        mRequestQueue.stop();
+        mRequestQueue.destroy();
     }
 
     @OnClick(R.id.load_btn)

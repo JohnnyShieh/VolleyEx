@@ -167,6 +167,27 @@ public class RequestQueue {
         }
     }
 
+    // added by Johnny Shieh : JohnnyShieh17@gamil.com
+    /**
+     * Call this method when app pause.
+     */
+    public void onPause() {
+        if(null != mCache) {
+            mCache.flush();
+        }
+    }
+
+    /**
+     * Call this method when app destroy.
+     */
+    public void destroy() {
+        stop();
+        if(null != mCache) {
+            mCache.close();
+        }
+    }
+    // added end
+
     /**
      * Gets a sequence number.
      */

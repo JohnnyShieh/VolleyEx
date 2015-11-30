@@ -1,5 +1,6 @@
+package com.android.volley.cache;
 /*
- * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2015 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,41 +15,28 @@
  * limitations under the License.
  */
 
-package com.android.volley.toolbox;
-
-import android.os.SystemClock;
-
 import com.android.volley.Cache;
 import com.android.volley.VolleyLog;
+import com.android.volley.disklrucache.DiskLruCache;
+import com.android.volley.utils.MD5Utils;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
+ * @author: Johnny Shieh
+ * @date: 2015-11-27
+ *
  * Cache implementation that caches files directly onto the hard disk in the specified
- * directory. The default disk usage size is 5MB, but is configurable.
+ * directory. And this is base on DiskLruCache.
  */
-public class DiskBasedCache implements Cache {
-
-    /** Map of the Key, CacheHeader pairs */
-    private final Map<String, CacheHeader> mEntries =
-            new LinkedHashMap<String, CacheHeader>(16, .75f, true);
-
-    /** Total amount of space currently used by the cache in bytes. */
-    private long mTotalSize = 0;
+public class DiskLruBasedCache implements Cache {
 
     /** The root directory to use for the cache. */
     private final File mRootDirectory;
@@ -56,143 +44,61 @@ public class DiskBasedCache implements Cache {
     /** The maximum size of the cache in bytes. */
     private final int mMaxCacheSizeInBytes;
 
-    /** Default maximum disk usage in bytes. */
-    private static final int DEFAULT_DISK_USAGE_BYTES = 5 * 1024 * 1024;
+    /** The App version, if this changes all the cache will clear. */
+    private final int mAppVersion;
 
-    /** High water mark percentage for the cache */
-    private static final float HYSTERESIS_FACTOR = 0.9f;
+    /** Default maximum disk usage in bytes. */
+    private static final int DEFAULT_DISK_USAGE_BYTES = 10 * 1024 * 1024;
+
+    /** Default number cache corresponding to one cache key. */
+    private static final int DEFAULT_KEY_VALUE_COUNT = 1;
+
+    /** Default index of the DiskLruCache.Editor.newInputStream method. */
+    private static final int DEFAULT_DISK_VALUE_INDEX = 0;
 
     /** Magic number for current version of cache file format. */
     private static final int CACHE_MAGIC = 0x20150306;
+
+    /** The Disk Cache store data on specified directory. */
+    private DiskLruCache mDiskLruCache;
 
     /**
      * Constructs an instance of the DiskBasedCache at the specified directory.
      * @param rootDirectory The root directory of the cache.
      * @param maxCacheSizeInBytes The maximum size of the cache in bytes.
      */
-    public DiskBasedCache(File rootDirectory, int maxCacheSizeInBytes) {
+    public DiskLruBasedCache(File rootDirectory, int maxCacheSizeInBytes, int appVersion) {
         mRootDirectory = rootDirectory;
         mMaxCacheSizeInBytes = maxCacheSizeInBytes;
+        mAppVersion = appVersion;
     }
 
     /**
      * Constructs an instance of the DiskBasedCache at the specified directory using
-     * the default maximum cache size of 5MB.
+     * the default maximum cache size of 10MB.
      * @param rootDirectory The root directory of the cache.
      */
-    public DiskBasedCache(File rootDirectory) {
-        this(rootDirectory, DEFAULT_DISK_USAGE_BYTES);
+    public DiskLruBasedCache(File rootDirectory, int appVersion) {
+        this(rootDirectory, DEFAULT_DISK_USAGE_BYTES, appVersion);
     }
 
     /**
-     * Clears the cache. Deletes all cached files from disk.
-     */
-    @Override
-    public synchronized void clear() {
-        File[] files = mRootDirectory.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                file.delete();
-            }
-        }
-        mEntries.clear();
-        mTotalSize = 0;
-        VolleyLog.d("Cache cleared.");
-    }
-
-    // added by Johnny Shieh : JohnnyShieh17@gamil.com
-    /**
-     * Get the size of cache.
-     */
-    public long size() {
-        return mTotalSize;
-    }
-
-    /**
-     * Flush the cache.
-     */
-    public void flush() {}
-
-    /**
-     * Close the cache.
-     */
-    public void close() {
-       mEntries.clear();
-    }
-    // added end
-
-    /**
-     * Returns the cache entry with the specified key if it exists, null otherwise.
-     */
-    @Override
-    public synchronized Entry get(String key) {
-        CacheHeader entry = mEntries.get(key);
-        // if the entry does not exist, return.
-        if (entry == null) {
-            return null;
-        }
-
-        File file = getFileForKey(key);
-        CountingInputStream cis = null;
-        try {
-            cis = new CountingInputStream(new BufferedInputStream(new FileInputStream(file)));
-            CacheHeader.readHeader(cis); // eat header
-            byte[] data = streamToBytes(cis, (int) (file.length() - cis.bytesRead));
-            return entry.toCacheEntry(data);
-        } catch (IOException e) {
-            VolleyLog.d("%s: %s", file.getAbsolutePath(), e.toString());
-            remove(key);
-            return null;
-        }  catch (NegativeArraySizeException e) {
-            VolleyLog.d("%s: %s", file.getAbsolutePath(), e.toString());
-            remove(key);
-            return null;
-        } finally {
-            if (cis != null) {
-                try {
-                    cis.close();
-                } catch (IOException ioe) {
-                    return null;
-                }
-            }
-        }
-    }
-
-    /**
-     * Initializes the DiskBasedCache by scanning for all files currently in the
-     * specified root directory. Creates the root directory if necessary.
+     * Initializes the DiskLruBasedCache for the specified directory.
+     * Creates the root directory if necessary.
      */
     @Override
     public synchronized void initialize() {
         if (!mRootDirectory.exists()) {
             if (!mRootDirectory.mkdirs()) {
                 VolleyLog.e("Unable to create cache dir %s", mRootDirectory.getAbsolutePath());
+                return;
             }
-            return;
         }
 
-        File[] files = mRootDirectory.listFiles();
-        if (files == null) {
-            return;
-        }
-        for (File file : files) {
-            BufferedInputStream fis = null;
-            try {
-                fis = new BufferedInputStream(new FileInputStream(file));
-                CacheHeader entry = CacheHeader.readHeader(fis);
-                entry.size = file.length();
-                putEntry(entry.key, entry);
-            } catch (IOException e) {
-                if (file != null) {
-                   file.delete();
-                }
-            } finally {
-                try {
-                    if (fis != null) {
-                        fis.close();
-                    }
-                } catch (IOException ignored) { }
-            }
+        try {
+            mDiskLruCache = DiskLruCache.open(mRootDirectory, mAppVersion, DEFAULT_KEY_VALUE_COUNT, mMaxCacheSizeInBytes);
+        }catch (IOException e) {
+            VolleyLog.e(e, "Unable to create DiskLruCache.");
         }
     }
 
@@ -203,6 +109,7 @@ public class DiskBasedCache implements Cache {
      */
     @Override
     public synchronized void invalidate(String key, boolean fullExpire) {
+        checkNotClosed();
         Entry entry = get(key);
         if (entry != null) {
             entry.softTtl = 0;
@@ -211,7 +118,40 @@ public class DiskBasedCache implements Cache {
             }
             put(key, entry);
         }
+    }
 
+    /**
+     * Returns the cache entry with the specified key if it exists, null otherwise.
+     */
+    @Override
+    public synchronized Entry get(String key) {
+        checkNotClosed();
+        String hashkey = MD5Utils.getMD5(key.getBytes());
+
+        InputStream is = null;
+        try {
+            DiskLruCache.Snapshot snapshot = mDiskLruCache.get(hashkey);
+            if(null != snapshot) {
+                is = snapshot.getInputStream(DEFAULT_DISK_VALUE_INDEX);
+                CacheHeader header = CacheHeader.readHeader(is);
+                byte[] data = streamToBytes(is, (int) header.size);
+                return header.toCacheEntry(data);
+            }
+        } catch (IOException e) {
+            VolleyLog.d("Failed to get entry for key %s", key);
+            remove(key);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            try {
+                if(null != is) {
+                    is.close();
+                }
+            }catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
 
     /**
@@ -219,26 +159,43 @@ public class DiskBasedCache implements Cache {
      */
     @Override
     public synchronized void put(String key, Entry entry) {
-        pruneIfNeeded(entry.data.length);
-        File file = getFileForKey(key);
+        checkNotClosed();
+        String hashkey = MD5Utils.getMD5(key.getBytes());
+
+        OutputStream os = null;
+        DiskLruCache.Editor editor = null;
         try {
-            BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(file));
-            CacheHeader e = new CacheHeader(key, entry);
-            boolean success = e.writeHeader(fos);
-            if (!success) {
-                fos.close();
-                VolleyLog.d("Failed to write header for %s", file.getAbsolutePath());
-                throw new IOException();
+            editor = mDiskLruCache.edit(hashkey);
+            if(null != editor) {
+                os = editor.newOutputStream(DEFAULT_DISK_VALUE_INDEX);
+                CacheHeader header = new CacheHeader(hashkey, entry);
+                boolean success = header.writeHeader(os);
+                if (!success) {
+                    os.close();
+                    VolleyLog.d("Failed to write header for key %s", key);
+                    throw new IOException();
+                }
+                os.write(entry.data);
+                editor.commit();
+                os.close();
             }
-            fos.write(entry.data);
-            fos.close();
-            putEntry(key, e);
-            return;
         } catch (IOException e) {
-        }
-        boolean deleted = file.delete();
-        if (!deleted) {
-            VolleyLog.d("Could not clean up file %s", file.getAbsolutePath());
+            e.printStackTrace();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }finally {
+            try {
+                if(null != editor) {
+                    editor.abortUnlessCommitted();
+                }
+                if(null != os) {
+                    os.close();
+                }
+            }catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
         }
     }
 
@@ -247,97 +204,82 @@ public class DiskBasedCache implements Cache {
      */
     @Override
     public synchronized void remove(String key) {
-        boolean deleted = getFileForKey(key).delete();
-        removeEntry(key);
+        checkNotClosed();
+        String hashkey = MD5Utils.getMD5(key.getBytes());
+        boolean deleted = false;
+        try {
+            deleted = mDiskLruCache.remove(hashkey);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if (!deleted) {
-            VolleyLog.d("Could not delete cache entry for key=%s, filename=%s",
-                    key, getFilenameForKey(key));
+            VolleyLog.d("Could not delete cache entry for key=%s", key);
         }
     }
 
     /**
-     * Creates a pseudo-unique filename for the specified cache key.
-     * @param key The key to generate a file name for.
-     * @return A pseudo-unique filename.
+     * Clears the cache. Deletes all cached files from disk.
      */
-    private String getFilenameForKey(String key) {
-        int firstHalfLength = key.length() / 2;
-        String localFilename = String.valueOf(key.substring(0, firstHalfLength).hashCode());
-        localFilename += String.valueOf(key.substring(firstHalfLength).hashCode());
-        return localFilename;
+    @Override
+    public synchronized void clear() {
+        checkNotClosed();
+        try {
+            mDiskLruCache.delete();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        initialize();
+        VolleyLog.d("Cache cleared.");
+    }
+
+    /** Check whether cache is closed or not. */
+    private void checkNotClosed() {
+        if(null == mDiskLruCache || mDiskLruCache.isClosed()) {
+            throw new IllegalStateException("disk lru cache is null or closed");
+        }
     }
 
     /**
-     * Returns a file object for the given cache key.
+     * Returns the number of bytes currently being used to store the values in
+     * this cache. This may be greater than the max size if a background
+     * deletion is pending.
      */
-    public File getFileForKey(String key) {
-        return new File(mRootDirectory, getFilenameForKey(key));
+    @Override
+    public synchronized long size() {
+        checkNotClosed();
+        return mDiskLruCache.size();
     }
 
     /**
-     * Prunes the cache to fit the amount of bytes specified.
-     * @param neededSpace The amount of bytes we are trying to fit into the cache.
+     * flush DiskLruCache. Note that this includes
+     * disk access so this should not be executed on the main/UI thread.
      */
-    private void pruneIfNeeded(int neededSpace) {
-        if ((mTotalSize + neededSpace) < mMaxCacheSizeInBytes) {
+    @Override
+    public synchronized void flush() {
+        checkNotClosed();
+        try {
+            mDiskLruCache.flush();
+            VolleyLog.d("Cache flushed.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Close DiskLruCache. Note that this includes
+     * disk access so this should not be executed on the main/UI thread.
+     */
+    @Override
+    public synchronized void close() {
+        if(null == mDiskLruCache || mDiskLruCache.isClosed()) {
             return;
         }
-        if (VolleyLog.DEBUG) {
-            VolleyLog.v("Pruning old cache entries.");
-        }
-
-        long before = mTotalSize;
-        int prunedFiles = 0;
-        long startTime = SystemClock.elapsedRealtime();
-
-        Iterator<Map.Entry<String, CacheHeader>> iterator = mEntries.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, CacheHeader> entry = iterator.next();
-            CacheHeader e = entry.getValue();
-            boolean deleted = getFileForKey(e.key).delete();
-            if (deleted) {
-                mTotalSize -= e.size;
-            } else {
-               VolleyLog.d("Could not delete cache entry for key=%s, filename=%s",
-                       e.key, getFilenameForKey(e.key));
-            }
-            iterator.remove();
-            prunedFiles++;
-
-            if ((mTotalSize + neededSpace) < mMaxCacheSizeInBytes * HYSTERESIS_FACTOR) {
-                break;
-            }
-        }
-
-        if (VolleyLog.DEBUG) {
-            VolleyLog.v("pruned %d files, %d bytes, %d ms",
-                    prunedFiles, (mTotalSize - before), SystemClock.elapsedRealtime() - startTime);
-        }
-    }
-
-    /**
-     * Puts the entry with the specified key into the cache.
-     * @param key The key to identify the entry by.
-     * @param entry The entry to cache.
-     */
-    private void putEntry(String key, CacheHeader entry) {
-        if (!mEntries.containsKey(key)) {
-            mTotalSize += entry.size;
-        } else {
-            CacheHeader oldEntry = mEntries.get(key);
-            mTotalSize += (entry.size - oldEntry.size);
-        }
-        mEntries.put(key, entry);
-    }
-
-    /**
-     * Removes the entry identified by 'key' from the cache.
-     */
-    private void removeEntry(String key) {
-        CacheHeader entry = mEntries.get(key);
-        if (entry != null) {
-            mTotalSize -= entry.size;
-            mEntries.remove(key);
+        try {
+            mDiskLruCache.close();
+            mDiskLruCache = null;
+            VolleyLog.d("Cache flushed.");
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -362,8 +304,7 @@ public class DiskBasedCache implements Cache {
      */
     // Visible for testing.
     static class CacheHeader {
-        /** The size of the data identified by this CacheHeader. (This is not
-         * serialized to disk. */
+        /** The size of the data identified by this CacheHeader. */
         public long size;
 
         /** The key that identifies the cache entry. */
@@ -417,6 +358,7 @@ public class DiskBasedCache implements Cache {
                 // don't bother deleting, it'll get pruned eventually
                 throw new IOException();
             }
+            entry.size = readLong(is);
             entry.key = readString(is);
             entry.etag = readString(is);
             if (entry.etag.equals("")) {
@@ -453,6 +395,7 @@ public class DiskBasedCache implements Cache {
         public boolean writeHeader(OutputStream os) {
             try {
                 writeInt(os, CACHE_MAGIC);
+                writeLong(os, size);
                 writeString(os, key);
                 writeString(os, etag == null ? "" : etag);
                 writeLong(os, serverDate);
@@ -469,39 +412,6 @@ public class DiskBasedCache implements Cache {
         }
 
     }
-
-    private static class CountingInputStream extends FilterInputStream {
-        private int bytesRead = 0;
-
-        private CountingInputStream(InputStream in) {
-            super(in);
-        }
-
-        @Override
-        public int read() throws IOException {
-            int result = super.read();
-            if (result != -1) {
-                bytesRead++;
-            }
-            return result;
-        }
-
-        @Override
-        public int read(byte[] buffer, int offset, int count) throws IOException {
-            int result = super.read(buffer, offset, count);
-            if (result != -1) {
-                bytesRead += result;
-            }
-            return result;
-        }
-    }
-
-    /*
-     * Homebrewed simple serialization system used for reading and writing cache
-     * headers on disk. Once upon a time, this used the standard Java
-     * Object{Input,Output}Stream, but the default implementation relies heavily
-     * on reflection (even for standard types) and generates a ton of garbage.
-     */
 
     /**
      * Simple wrapper around {@link InputStream#read()} that throws EOFException
@@ -582,8 +492,8 @@ public class DiskBasedCache implements Cache {
     static Map<String, String> readStringStringMap(InputStream is) throws IOException {
         int size = readInt(is);
         Map<String, String> result = (size == 0)
-                ? Collections.<String, String>emptyMap()
-                : new HashMap<String, String>(size);
+            ? Collections.<String, String>emptyMap()
+            : new HashMap<String, String>(size);
         for (int i = 0; i < size; i++) {
             String key = readString(is).intern();
             String value = readString(is).intern();
@@ -591,6 +501,4 @@ public class DiskBasedCache implements Cache {
         }
         return result;
     }
-
-
 }

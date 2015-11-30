@@ -27,6 +27,19 @@ public class NoCache implements Cache {
     }
 
     @Override
+    public long size() {
+        return 0;
+    }
+
+    @Override
+    public void flush() {
+    }
+
+    @Override
+    public void close() {
+    }
+
+    @Override
     public Entry get(String key) {
         return null;
     }
