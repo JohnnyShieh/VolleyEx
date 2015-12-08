@@ -131,11 +131,11 @@ public class HttpHeaderParser {
      *
      * @param response The network response to parse headers from
      *
-     * @param ttl The TTL of the cache, it is useful only when {value > 0} and finalExpire = 0
-     * @param softTtl The Soft TTL of the cache, it is useful only when {value > 0} and softExpire = 0
+     * @param defaultTtl The TTL of the cache, it is useful only when {value > 0} and finalExpire = 0
+     * @param defaultSoftTtl The Soft TTL of the cache, it is useful only when {value > 0} and softExpire = 0
      * @return a cache entry for the given response, or null if the response is not cacheable.
      */
-    public static Cache.Entry parseCacheHeaders(NetworkResponse response, boolean shouldCache, long ttl, long softTtl) {
+    public static Cache.Entry parseCacheHeaders(NetworkResponse response, boolean shouldCache, long defaultTtl, long defaultSoftTtl) {
         // return null if shouldCache is false, whether response has Cache-Control or not.
         if(!shouldCache) {
             return null;
@@ -170,7 +170,7 @@ public class HttpHeaderParser {
                 String token = tokens[i].trim();
                 if (token.equals("no-cache") || token.equals("no-store")) {
                     // Use ttl as cache's expire time when Cache-Control is no-cache.
-                    if(ttl > 0) {
+                    if(defaultTtl > 0) {
                         break;
                     }else {
                         return null;
@@ -214,10 +214,10 @@ public class HttpHeaderParser {
             // Default semantic for Expire header in HTTP specification is softExpire.
             softExpire = now + (serverExpires - serverDate);
             finalExpire = softExpire;
-        } else if (ttl > 0) {
+        } else if (defaultTtl > 0) {
             // There not exist expire header in HTTP specification, so use ttl param.
-            softExpire = softTtl > 0 ? (now + softTtl) : softExpire;
-            finalExpire = now + ttl;
+            softExpire = defaultSoftTtl > 0 ? (now + defaultSoftTtl) : softExpire;
+            finalExpire = now + defaultTtl;
         }
 
         Cache.Entry entry = new Cache.Entry();

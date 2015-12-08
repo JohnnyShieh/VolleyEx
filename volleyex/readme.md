@@ -12,6 +12,6 @@
 
 6. LruCache内存缓存与DiskLruCache硬盘缓存
 
-7. 图片的压缩加载
+7. 图片的压缩加载 ^_^
 
 8. ListView快速滑动取消请求策略

@@ -56,6 +56,19 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         int PATCH = 7;
     }
 
+    // added by Johnny Shieh : JohnnyShieh17@gmail.com
+    /** Callback interface for the request is finished. */
+    public interface FinishListener {
+        /**
+         * Callback method when the request is finishing. it may happen after
+         * cancel, deliver parsed responses or deliver error message operations.
+         *
+         * This listener will be clear after call it.
+         */
+        public void onFinish(Request request);
+    }
+    // added end
+
     /** An event log tracing the lifetime of this request; for debugging. */
     private final MarkerLog mEventLog = MarkerLog.ENABLED ? new MarkerLog() : null;
 
@@ -79,6 +92,11 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     /** Listener interface for errors. */
     private Response.ErrorListener mErrorListener;
+
+    // added by Johnny Shieh : JohnnyShieh17@gmail.com
+    /** Listener interface for finish. */
+    private FinishListener mFinishListener;
+    // added end
 
     /** Sequence number of this request, used to enforce FIFO ordering. */
     private Integer mSequence;
@@ -110,10 +128,10 @@ public abstract class Request<T> implements Comparable<Request<T>> {
 
     // added by Johnny Shieh : JohnnyShieh17@gmail.com
     /** The default TTL of this cache when the response doesn't have Cache-Control, it is useless if the value <= 0. */
-    private long mTtl;
+    private long mDefaultTtl;
 
     /** The default Soft TTL of this cache when the response doesn't have Cache-Control, it is useless if the value <= 0. */
-    private long mSoftTtl;
+    private long mDefaultSoftTtl;
     // added end
 
     /**
@@ -256,6 +274,12 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      */
     protected void onFinish() {
         mErrorListener = null;
+        // added by Johnny Shieh : JohnnyShieh17@gmail.com
+        if(null != mFinishListener) {
+            mFinishListener.onFinish(this);
+            mFinishListener = null;
+        }
+        // added end
     }
 
     /**
@@ -520,31 +544,36 @@ public abstract class Request<T> implements Comparable<Request<T>> {
     /**
      * Returns the TTL of the cache.
      */
-    public long getTtl() {
-        return mTtl;
+    public long getDefaultTtl() {
+        return mDefaultTtl;
     }
 
     /**
      * Set the time for this cache to live.
-     * You may also need use {@link #setSoftTtl(long)}
+     * You may also need use {@link #setDefaultSoftTtl(long)}
      */
-    public void setTtl(long ttl) {
-        mTtl = ttl;
+    public void setDefaultTtl(long defaultTtl) {
+        mDefaultTtl = defaultTtl;
     }
 
     /**
      * Returns the Soft TTL of the cache.
      */
-    public long getSoftTtl() {
-        return mSoftTtl;
+    public long getDefaultSoftTtl() {
+        return mDefaultSoftTtl;
     }
 
     /**
      * Set the soft time for this cache to live.
-     * You may also need use {@link #setTtl(long)}
+     * You may also need use {@link #setDefaultTtl(long)}
      */
-    public void setSoftTtl(long softTtl) {
-        mSoftTtl = softTtl;
+    public void setDefaultSoftTtl(long defaultSoftTtl) {
+        mDefaultSoftTtl = defaultSoftTtl;
+    }
+
+    /** Set the finish listener. */
+    public void setFinishListener(FinishListener finishListener) {
+        mFinishListener = finishListener;
     }
     // added end
 
@@ -635,7 +664,8 @@ public abstract class Request<T> implements Comparable<Request<T>> {
             if(null == data) {
                 return Response.error(new ParseError(response));
             }
-            return Response.success(data, HttpHeaderParser.parseCacheHeaders(response, mShouldCache, mTtl, mSoftTtl));
+            return Response.success(data, HttpHeaderParser.parseCacheHeaders(response, mShouldCache,
+                mDefaultTtl, mDefaultSoftTtl));
         }catch (Exception e) {
             return Response.error(new ParseError(e));
         }
@@ -671,7 +701,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      */
     public void deliverError(VolleyError error) {
         if (mErrorListener != null) {
-            mErrorListener.onErrorResponse(error);
+            mErrorListener.onErrorResponse(mUrl, error);
         }
     }
 

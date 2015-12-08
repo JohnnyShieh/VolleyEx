@@ -64,7 +64,7 @@ public class StringRequest extends Request<String> {
     @Override
     protected void deliverResponse(String response) {
         if (mListener != null) {
-            mListener.onResponse(response);
+            mListener.onResponse(getOriginUrl(), response);
         }
     }
 

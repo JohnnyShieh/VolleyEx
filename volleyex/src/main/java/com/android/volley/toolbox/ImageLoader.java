@@ -98,7 +98,7 @@ public class ImageLoader {
             final int defaultImageResId, final int errorImageResId) {
         return new ImageListener() {
             @Override
-            public void onErrorResponse(VolleyError error) {
+            public void onErrorResponse(String requestUrl, VolleyError error) {
                 if (errorImageResId != 0) {
                     view.setImageResource(errorImageResId);
                 }
@@ -251,12 +251,12 @@ public class ImageLoader {
             ScaleType scaleType, final String cacheKey) {
         return new ImageRequest(requestUrl, new Listener<Bitmap>() {
             @Override
-            public void onResponse(Bitmap response) {
+            public void onResponse(String requestUrl, Bitmap response) {
                 onGetImageSuccess(cacheKey, response);
             }
         }, maxWidth, maxHeight, scaleType, Config.RGB_565, new ErrorListener() {
             @Override
-            public void onErrorResponse(VolleyError error) {
+            public void onErrorResponse(String requestUrl, VolleyError error) {
                 onGetImageError(cacheKey, error);
             }
         });
@@ -473,7 +473,7 @@ public class ImageLoader {
                                 container.mBitmap = bir.mResponseBitmap;
                                 container.mListener.onResponse(container, false);
                             } else {
-                                container.mListener.onErrorResponse(bir.getError());
+                                container.mListener.onErrorResponse(container.getRequestUrl(), bir.getError());
                             }
                         }
                     }

@@ -138,14 +138,14 @@ public class RequestFuture<T> implements Future<T>, Response.Listener<T>,
     }
 
     @Override
-    public synchronized void onResponse(T response) {
+    public synchronized void onResponse(String requestUrl, T response) {
         mResultReceived = true;
         mResult = response;
         notifyAll();
     }
 
     @Override
-    public synchronized void onErrorResponse(VolleyError error) {
+    public synchronized void onErrorResponse(String requestUrl, VolleyError error) {
         mException = error;
         notifyAll();
     }
