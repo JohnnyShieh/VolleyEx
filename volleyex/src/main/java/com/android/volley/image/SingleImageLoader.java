@@ -21,9 +21,7 @@ import com.android.volley.toolbox.ImageRequest;
 
 import android.graphics.Bitmap;
 import android.text.TextUtils;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.DecelerateInterpolator;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 /**
@@ -55,6 +53,9 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
     /** The default time to live of image cache, Default is 24 hours. */
     private long mDefaultTTL = DEFAULT_IMAGE_TTL;
 
+    /** Whether enable or disable the cross fade of the drawables, Cross fade is disabled by default. */
+    private boolean mCrossFade = false;
+
     /** The listener for the process of loading image. */
     private final LoadListener mLoadListener;
 
@@ -73,20 +74,20 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
         mDefaultTTL = ttl;
     }
 
-    /** Return the animation for ImageView display the image. */
-    private Animation getBitmapAnimation() {
-        AlphaAnimation animation = new AlphaAnimation(0f, 1f);
-        animation.setDuration(300);
-        animation.setInterpolator(new DecelerateInterpolator());
-        return animation;
+    /**
+     * @param enabled True to enable cross fading, false otherwise.
+     */
+    public void setCrossFadeEnabled(boolean enabled) {
+        mCrossFade = enabled;
     }
 
     /** Called when a response is received. */
     @Override
     public void onResponse(String requestUrl, Bitmap bitmap) {
-        if(null != bitmap) {
+        if(mCrossFade) {
+            CrossFadeDrawable.setBitmap(mImageView, bitmap);
+        }else {
             mImageView.setImageBitmap(bitmap);
-            mImageView.startAnimation(getBitmapAnimation());
         }
         if(null != mLoadListener) {
             mLoadListener.onLoadEnd(bitmap);
@@ -129,19 +130,33 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
 
     /**
      * Equivalent to calling {@link #load(String, int, int, ImageView.ScaleType, Bitmap.Config)} with
-     * {@code scaleType == mImageView.getScaleType()}, {@code Bitmap.Config == Bitmap.Config.RGB_565}.
+     * {@code scaleType == mImageView.getScaleType()}
      */
-    public void load(String requestUrl, int maxWidth, int maxHeight) {
-        load(requestUrl, maxWidth, maxHeight, mImageView.getScaleType(), DEFAULT_DECODE_CONFIG);
+    public void load(String requestUrl, int maxWidth, int maxHeight, Bitmap.Config config) {
+        load(requestUrl, maxWidth, maxHeight, mImageView.getScaleType(), config);
     }
 
     /**
-     * Equivalent to calling {@link #load(String, int, int, ImageView.ScaleType, Bitmap.Config)} with
-     * {@code maxWidth == mImageView.getMeasuredWidth()}, {@code maxHeight == mImageView.getMeasuredHeight()},
-     * {@code scaleType == mImageView.getScaleType()}, {@code Bitmap.Config == Bitmap.Config.RGB_565}.
+     * Equivalent to calling {@link #load(String, int, int, Bitmap.Config)} with
+     * maxWidth == the width of imageView, maxHeight == the height of imageView.
+     */
+    public void load(String requestUrl, Bitmap.Config config) {
+        int maxWidth = 0;
+        int maxHeight = 0;
+        ViewGroup.LayoutParams layoutParams = mImageView.getLayoutParams();
+        if(null != layoutParams) {
+            maxWidth = (layoutParams.width == ViewGroup.LayoutParams.WRAP_CONTENT) ? 0 : mImageView.getMeasuredWidth();
+            maxHeight = (layoutParams.height == ViewGroup.LayoutParams.WRAP_CONTENT) ? 0 : mImageView.getMeasuredHeight();
+        }
+        load(requestUrl, maxWidth, maxHeight, config);
+    }
+
+    /**
+     * Equivalent to calling {@link #load(String, Bitmap.Config)} with
+     * {@code Bitmap.Config == Bitmap.Config.RGB_565}.
      */
     public void load(String requestUrl) {
-        load(requestUrl, mImageView.getMeasuredWidth(), mImageView.getMeasuredHeight(), mImageView.getScaleType(), DEFAULT_DECODE_CONFIG);
+        load(requestUrl, DEFAULT_DECODE_CONFIG);
     }
 
     /**

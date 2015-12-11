@@ -66,14 +66,11 @@ public class SingleLoaderSampleFragment extends Fragment {
             new SingleImageLoader.LoadListener() {
                 @Override
                 public void onLoadStart() {
-                    mImageView1.setVisibility(View.INVISIBLE);
-                    mTextView1.setVisibility(View.INVISIBLE);
                 }
 
                 @Override
                 public void onLoadEnd(Bitmap bitmap) {
                     mTextView1.setVisibility(View.VISIBLE);
-                    mImageView1.setVisibility(View.VISIBLE);
                 }
 
                 @Override
@@ -85,14 +82,11 @@ public class SingleLoaderSampleFragment extends Fragment {
             new SingleImageLoader.LoadListener() {
                 @Override
                 public void onLoadStart() {
-                    mImageView2.setVisibility(View.INVISIBLE);
-                    mTextView2.setVisibility(View.INVISIBLE);
                 }
 
                 @Override
                 public void onLoadEnd(Bitmap bitmap) {
                     mTextView2.setVisibility(View.VISIBLE);
-                    mImageView2.setVisibility(View.VISIBLE);
                 }
 
                 @Override
@@ -100,6 +94,8 @@ public class SingleLoaderSampleFragment extends Fragment {
                     //
                 }
             });
+        mImageLoader1.setCrossFadeEnabled(true);
+        mImageLoader2.setCrossFadeEnabled(true);
         return contentView;
     }
 
@@ -111,11 +107,10 @@ public class SingleLoaderSampleFragment extends Fragment {
 
     @OnClick(R.id.load_btn)
     public void clickLoadBtn() {
-        int index1 = (int) (Math.random() * Constant.imageUrls.length);
-        int index2 = (int) (Math.random() * Constant.imageUrls.length);
+        int index = (int) (Math.random() * Constant.imageUrls.length);
 
-        mImageLoader1.load(Constant.imageUrls[index1], 0, 0);
-        mImageLoader2.load(Constant.imageUrls[index2]);
+        mImageLoader1.load(Constant.imageUrls[index]);
+        mImageLoader2.load(Constant.imageUrls[index]);
     }
 
 }

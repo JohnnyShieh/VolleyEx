@@ -17,36 +17,35 @@
             android:layout_gravity="center_horizontal"/>
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/imageView"
-            android:background="@drawable/background_rect_stroke_2"
-            android:layout_marginTop="20dp"
-            android:layout_gravity="center_horizontal"
-            android:visibility="invisible"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="No max width and height"
-            android:id="@+id/textView1"
-            android:layout_gravity="center_horizontal"
-            android:visibility="invisible"/>
-
-        <ImageView
             android:layout_width="200dp"
             android:layout_height="200dp"
             android:background="@drawable/background_rect_stroke_2"
             android:layout_marginTop="30dp"
+            android:scaleType="centerCrop"
             android:id="@+id/imageView2"
-            android:layout_gravity="center_horizontal"
-            android:visibility="invisible"/>
+            android:layout_gravity="center_horizontal"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="fix with and height"
             android:id="@+id/textView2"
+            android:layout_gravity="center_horizontal"
+            android:visibility="invisible"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageView"
+            android:background="@drawable/background_rect_stroke_2"
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center_horizontal"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No max width and height"
+            android:id="@+id/textView1"
             android:layout_gravity="center_horizontal"
             android:visibility="invisible"/>
 
