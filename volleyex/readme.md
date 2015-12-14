@@ -15,3 +15,9 @@
 7. 图片的压缩加载 ^_^
 
 8. ListView快速滑动取消请求策略
+
+9. 加载本地图片（drawable, asset, file, content）
+
+https://github.com/DWorkS/VolleyPlus
+
+https://github.com/bumptech/glide

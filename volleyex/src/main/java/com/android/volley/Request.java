@@ -16,12 +16,14 @@
 
 package com.android.volley;
 
+import android.content.Context;
 import android.net.TrafficStats;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import com.android.volley.VolleyLog.MarkerLog;
+import com.android.volley.image.ImageScheme;
 import com.android.volley.toolbox.HttpHeaderParser;
 
 import java.io.UnsupportedEncodingException;
@@ -313,6 +315,11 @@ public abstract class Request<T> implements Comparable<Request<T>> {
         return mSequence;
     }
 
+    /** Returns the Context, through which it can access the current theme, resources, etc. */
+    protected Context getContext() {
+        return mRequestQueue.getContext();
+    }
+
     /**
      * Returns the URL of this request.
      */
@@ -537,7 +544,7 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      * Returns true if responses to this request should be cached.
      */
     public final boolean shouldCache() {
-        return mShouldCache;
+        return mShouldCache && ImageScheme.isHttpScheme(mUrl);
     }
 
     // added by Johnny Shieh : JohnnyShieh17@gmail.com

@@ -91,9 +91,9 @@ public class VolleyEx {
         RequestQueue queue;
         if(maxDiskCacheBytes <= -1) {
             // No maximum size specified
-            queue = new RequestQueue(new DiskLruBasedCache(cacheDir, appVersion), network);
+            queue = new RequestQueue(context, new DiskLruBasedCache(cacheDir, appVersion), network);
         }else {
-            queue = new RequestQueue(new DiskLruBasedCache(cacheDir, maxDiskCacheBytes, appVersion), network);
+            queue = new RequestQueue(context, new DiskLruBasedCache(cacheDir, maxDiskCacheBytes, appVersion), network);
         }
 
         queue.start();

@@ -16,6 +16,7 @@
 
 package com.android.volley;
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -79,6 +80,9 @@ public class RequestQueue {
     /** Number of network request dispatcher threads to start. */
     private static final int DEFAULT_NETWORK_THREAD_POOL_SIZE = 4;
 
+    /** The Context*/
+    private final Context mContext;
+
     /** Cache interface for retrieving and storing responses. */
     private final Cache mCache;
 
@@ -105,8 +109,9 @@ public class RequestQueue {
      * @param threadPoolSize Number of network dispatcher threads to create
      * @param delivery A ResponseDelivery interface for posting responses and errors
      */
-    public RequestQueue(Cache cache, Network network, int threadPoolSize,
+    public RequestQueue(Context context, Cache cache, Network network, int threadPoolSize,
             ResponseDelivery delivery) {
+        mContext = context;
         mCache = cache;
         mNetwork = network;
         mDispatchers = new NetworkDispatcher[threadPoolSize];
@@ -120,8 +125,8 @@ public class RequestQueue {
      * @param network A Network interface for performing HTTP requests
      * @param threadPoolSize Number of network dispatcher threads to create
      */
-    public RequestQueue(Cache cache, Network network, int threadPoolSize) {
-        this(cache, network, threadPoolSize,
+    public RequestQueue(Context context, Cache cache, Network network, int threadPoolSize) {
+        this(context, cache, network, threadPoolSize,
                 new ExecutorDelivery(new Handler(Looper.getMainLooper())));
     }
 
@@ -131,8 +136,8 @@ public class RequestQueue {
      * @param cache A Cache to use for persisting responses to disk
      * @param network A Network interface for performing HTTP requests
      */
-    public RequestQueue(Cache cache, Network network) {
-        this(cache, network, DEFAULT_NETWORK_THREAD_POOL_SIZE);
+    public RequestQueue(Context context, Cache cache, Network network) {
+        this(context, cache, network, DEFAULT_NETWORK_THREAD_POOL_SIZE);
     }
 
     /**
@@ -193,6 +198,11 @@ public class RequestQueue {
      */
     public int getSequenceNumber() {
         return mSequenceGenerator.incrementAndGet();
+    }
+
+    /** Returns the Context, through which it can access the current theme, resources, etc. */
+    public Context getContext() {
+        return mContext;
     }
 
     /**

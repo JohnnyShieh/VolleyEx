@@ -16,6 +16,8 @@
 
 package com.android.volley;
 
+import com.android.volley.image.ImageScheme;
+
 import android.annotation.TargetApi;
 import android.net.TrafficStats;
 import android.os.Build;
@@ -110,16 +112,22 @@ public class NetworkDispatcher extends Thread {
 
                 addTrafficStatsTag(request);
 
-                // Perform the network request.
-                NetworkResponse networkResponse = mNetwork.performRequest(request);
-                request.addMarker("network-http-complete");
+                NetworkResponse networkResponse;
+                if(ImageScheme.isHttpScheme(request.getUrl())) {
+                    // Perform the network request.
+                    networkResponse = mNetwork.performRequest(request);
+                    request.addMarker("network-http-complete");
 
-                // If the server returned 304 AND we delivered a response already,
-                // we're done -- don't deliver a second identical response.
-                if (networkResponse.notModified && request.hasHadResponseDelivered()) {
-                    request.finish("not-modified");
-                    continue;
+                    // If the server returned 304 AND we delivered a response already,
+                    // we're done -- don't deliver a second identical response.
+                    if (networkResponse.notModified && request.hasHadResponseDelivered()) {
+                        request.finish("not-modified");
+                        continue;
+                    }
+                }else {
+                    networkResponse = new NetworkResponse(null);
                 }
+
 
                 // Parse the response here on the worker thread.
                 Response<?> response = request.parseNetworkResponse(networkResponse);

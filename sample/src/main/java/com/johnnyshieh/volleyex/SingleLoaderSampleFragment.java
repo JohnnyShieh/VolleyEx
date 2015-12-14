@@ -96,6 +96,8 @@ public class SingleLoaderSampleFragment extends Fragment {
             });
         mImageLoader1.setCrossFadeEnabled(true);
         mImageLoader2.setCrossFadeEnabled(true);
+        mImageLoader1.load("drawable://" + R.drawable.ic_launcher);
+        mImageLoader2.load("drawable://" + R.drawable.ic_launcher);
         return contentView;
     }
 
