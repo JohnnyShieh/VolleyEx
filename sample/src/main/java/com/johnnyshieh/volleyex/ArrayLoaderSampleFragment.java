@@ -16,9 +16,9 @@ package com.johnnyshieh.volleyex;
  */
 
 import com.android.volley.image.ArrayImageLoader;
+import com.android.volley.image.AbsListViewPauseOnScrollListener;
 
 import android.app.Fragment;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
@@ -27,9 +27,6 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -54,8 +51,9 @@ public class ArrayLoaderSampleFragment extends Fragment {
         ButterKnife.bind(this, contentView);
 
         mAdapter = new MyAdapter();
-        mArrayImageLoader = new ArrayImageLoader(RequestQueueHolder.getInstance(), mAdapter, null);
+        mArrayImageLoader = new ArrayImageLoader(RequestQueueHolder.getInstance(), null, 0.125f, R.color.color_unloaded);
         mGridView.setAdapter(mAdapter);
+        mGridView.setOnScrollListener(new AbsListViewPauseOnScrollListener(mArrayImageLoader, null));
         return contentView;
     }
 
@@ -66,38 +64,7 @@ public class ArrayLoaderSampleFragment extends Fragment {
         ButterKnife.unbind(this);
     }
 
-    private List<View> findViewByTag(String tag) {
-        List<View> list = new ArrayList<>();
-        int firstPos = mGridView.getFirstVisiblePosition();
-        int lastPos = mGridView.getLastVisiblePosition();
-        for(int i = firstPos; i <= lastPos; i ++) {
-            View view = mGridView.getChildAt(i - firstPos);
-            if(null != view) {
-                View tagView = view.findViewWithTag(tag);
-                if(null != tagView) {
-                    list.add(tagView);
-                }
-            }
-        }
-        return list;
-    }
-
-    public class MyAdapter extends BaseAdapter implements ArrayImageLoader.SuccessListener{
-
-        @Override
-        public void onSuccess(String requestUrl, Bitmap bitmap) {
-            if(null == bitmap) {
-                return;
-            }
-            List<View> list = findViewByTag(requestUrl);
-            if(null != list && list.size() > 0) {
-                for (View view : list) {
-                    if(view instanceof ImageView) {
-                        ((ImageView)view).setImageBitmap(bitmap);
-                    }
-                }
-            }
-        }
+    public class MyAdapter extends BaseAdapter {
 
         public class Holder {
             @Bind(R.id.net_image) ImageView imageView;
@@ -131,8 +98,8 @@ public class ArrayLoaderSampleFragment extends Fragment {
             Holder holder = (Holder) convertView.getTag();
             String requestUrl = (String) getItem(position);
             holder.imageView.setTag(requestUrl);
-            holder.imageView.setImageBitmap(mArrayImageLoader.loadBitmap(requestUrl, holder.imageView.getMeasuredWidth(),
-                holder.imageView.getMeasuredHeight(), holder.imageView.getScaleType()));
+            mArrayImageLoader.loadBitmap(holder.imageView, requestUrl, holder.imageView.getMeasuredWidth(),
+                holder.imageView.getMeasuredHeight(), position);
             return convertView;
         }
     }

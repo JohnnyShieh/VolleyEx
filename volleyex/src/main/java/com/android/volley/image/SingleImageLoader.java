@@ -15,6 +15,7 @@ package com.android.volley.image;
  * limitations under the License.
  */
 
+import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.toolbox.ImageRequest;
@@ -39,25 +40,25 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
     private static final long DEFAULT_IMAGE_TTL = 1 * 24 * 3600 * 1000;
 
     /** RequestQueue for dispatching ImageRequests onto. */
-    private final RequestQueue mRequestQueue;
+    protected final RequestQueue mRequestQueue;
 
     /** ImageView for display the image. */
-    private final ImageView mImageView;
+    protected final ImageView mImageView;
 
     /** The request image url. */
-    private String mRequestUrl;
+    protected String mRequestUrl;
 
     /** The current request loading images. */
-    private ImageRequest mImageRequest;
+    protected ImageRequest mImageRequest;
 
     /** The default time to live of image cache, Default is 24 hours. */
-    private long mDefaultTTL = DEFAULT_IMAGE_TTL;
+    protected long mDefaultTTL = DEFAULT_IMAGE_TTL;
 
     /** Whether enable or disable the cross fade of the drawables, Cross fade is disabled by default. */
-    private boolean mCrossFade = false;
+    protected boolean mCrossFade = false;
 
     /** The listener for the process of loading image. */
-    private final LoadListener mLoadListener;
+    protected final LoadListener mLoadListener;
 
     public SingleImageLoader(RequestQueue requestQueue, ImageView imageView) {
         this(requestQueue, imageView, null);
@@ -74,7 +75,14 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
         mDefaultTTL = ttl;
     }
 
+    /** Returns the request url. */
+    public String getRequestUrl() {
+        return mRequestUrl;
+    }
+
     /**
+     * When {@link ImageView} has fixed width and height, cross-fade transition behaves nice.
+     * If {@link android.view.ViewGroup.LayoutParams} is {@code WRAP_CONTENT}, you'd better not use it.
      * @param enabled True to enable cross fading, false otherwise.
      */
     public void setCrossFadeEnabled(boolean enabled) {
@@ -84,13 +92,16 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
     /** Called when a response is received. */
     @Override
     public void onResponse(String requestUrl, Bitmap bitmap) {
+        if(!TextUtils.equals(mRequestUrl, requestUrl)) {
+            return;
+        }
         if(mCrossFade) {
             CrossFadeDrawable.setBitmap(mImageView, bitmap);
         }else {
             mImageView.setImageBitmap(bitmap);
         }
         if(null != mLoadListener) {
-            mLoadListener.onLoadEnd(bitmap);
+            mLoadListener.onSuccess(bitmap);
         }
     }
 
@@ -119,11 +130,12 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
         mRequestUrl = requestUrl;
         mImageRequest = new ImageRequest(requestUrl, this, maxWidth, maxHeight,
             mImageView.getScaleType(), config, mLoadListener);
+        mImageRequest.setFinishListener(mLoadListener);
         mImageRequest.setDefaultSoftTtl(mDefaultTTL);
         mImageRequest.setDefaultTtl(mDefaultTTL);
 
         if(null != mLoadListener) {
-            mLoadListener.onLoadStart();
+            mLoadListener.onStart();
         }
         mRequestQueue.add(mImageRequest);
     }
@@ -162,11 +174,11 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
     /**
      * Interface for the ImageView handlers on image requests.
      */
-    public interface LoadListener extends Response.ErrorListener {
+    public interface LoadListener extends Response.ErrorListener, Request.FinishListener{
         /** Listens for the time before the loading of the image request. */
-        void onLoadStart();
+        void onStart();
 
-        /** Listens for the time after the loading of the image request. */
-        void onLoadEnd(Bitmap bitmap);
+        /** Listens for the time after response is received. */
+        void onSuccess(Bitmap bitmap);
     }
 }

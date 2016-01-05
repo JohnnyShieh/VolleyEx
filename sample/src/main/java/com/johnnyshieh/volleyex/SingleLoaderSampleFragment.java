@@ -15,6 +15,7 @@ package com.johnnyshieh.volleyex;
  * limitations under the License.
  */
 
+import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.VolleyError;
 import com.android.volley.image.SingleImageLoader;
@@ -65,11 +66,16 @@ public class SingleLoaderSampleFragment extends Fragment {
         mImageLoader1 = new SingleImageLoader(requestQueue, mImageView1,
             new SingleImageLoader.LoadListener() {
                 @Override
-                public void onLoadStart() {
+                public void onFinish(Request request) {
+
                 }
 
                 @Override
-                public void onLoadEnd(Bitmap bitmap) {
+                public void onStart() {
+                }
+
+                @Override
+                public void onSuccess(Bitmap bitmap) {
                     mTextView1.setVisibility(View.VISIBLE);
                 }
 
@@ -81,11 +87,16 @@ public class SingleLoaderSampleFragment extends Fragment {
         mImageLoader2 = new SingleImageLoader(requestQueue, mImageView2,
             new SingleImageLoader.LoadListener() {
                 @Override
-                public void onLoadStart() {
+                public void onFinish(Request request) {
+
                 }
 
                 @Override
-                public void onLoadEnd(Bitmap bitmap) {
+                public void onStart() {
+                }
+
+                @Override
+                public void onSuccess(Bitmap bitmap) {
                     mTextView2.setVisibility(View.VISIBLE);
                 }
 

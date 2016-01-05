@@ -18,12 +18,23 @@ package com.android.volley.image;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.toolbox.Volley;
 
 import android.graphics.Bitmap;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
+import android.util.Log;
+import android.util.SparseBooleanArray;
+import android.view.View;
 import android.widget.ImageView;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * @author: Johnny Shieh
@@ -33,11 +44,15 @@ import android.widget.ImageView;
  */
 public class ArrayImageLoader {
 
-    /** Callback interface for delivering parsed bitmap. */
-    public interface SuccessListener {
+    /**
+     * Interface for the ImageView handlers on image requests.
+     */
+    public interface LoadListener extends Response.ErrorListener, Request.FinishListener {
         /** Called when a bitmap  is received. */
-        public void onSuccess(String requestUrl, Bitmap bitmap);
+        void onSuccess(String requestUrl, Bitmap bitmap);
     }
+
+    public static final String TAG = "ArrayImageLoader";
 
     /** The default decode config for bitmap. */
     private static final Bitmap.Config DEFAULT_DECODE_CONFIG = Bitmap.Config.RGB_565;
@@ -48,23 +63,29 @@ public class ArrayImageLoader {
     /** The default memory cache factor of max memory. */
     private static final float DEFAULT_MEMORY_FACTOR = 0.125f;
 
-    /** The default max request count. */
-    private static final int DEFAULT_REQUEST_COUNT = 10;
+    private static final int ULR_TAG_KEY = TAG.hashCode();
+
+    private static final int POSITION_TAG_KEY = TAG.hashCode() + 1;
 
     /** RequestQueue for dispatching ImageRequests onto. */
     private final RequestQueue mRequestQueue;
 
     /** Listener interface for the loaded bitmap. */
-    private final SuccessListener mSuccessListener;
-
-    /** Listener interface for errors. */
-    private final Response.ErrorListener mErrorListener;
+    private final LoadListener mLoadListener;
 
     /** Memory cache for the loaded bitmap. */
     private LruCache<String, Bitmap> mMemoryCache;
 
+    /** The array stores the value whether the position is loaded or not. */
+    protected SparseBooleanArray mLoadedArray = new SparseBooleanArray();
+
     /** The queue of image requests currently being processed by this RequestQueue. */
-    private ImageRequestList mCurrentRequestList;
+    private final ImageRequestMap mCurrentRequestMap;
+
+    /** The queue of image requests waiting to process. */
+    private final ImageRequestMap mWaitingRequestMap = new ImageRequestMap(10);
+
+    private boolean mPaused = false;
 
     /** Decode config for loaded bitmap, default is {@code #Bitmap.Config.RGB_565}. */
     private Bitmap.Config mDecodeConfig = DEFAULT_DECODE_CONFIG;
@@ -72,52 +93,36 @@ public class ArrayImageLoader {
     /** The default time to live of image cache, Default is 24 hours. */
     private long mDefaultTTL = DEFAULT_IMAGE_TTL;
 
-    private Response.Listener<Bitmap> mLoadedListener = new Response.Listener<Bitmap>() {
-        @Override
-        public void onResponse(String requestUrl, Bitmap bitmap) {
-            if(null == mMemoryCache.get(requestUrl)) {
-                mMemoryCache.put(requestUrl, bitmap);
-            }
-            mSuccessListener.onSuccess(requestUrl, bitmap);
-        }
-    };
+    /** Whether enable or disable the cross fade of the drawables, Cross fade is disabled by default. */
+    private boolean mCrossFade = true;
 
-    /** Listener interface for the time request is finished. */
-    private Request.FinishListener mFinishListener = new Request.FinishListener() {
-        @Override
-        public void onFinish(Request request) {
-            // If the request is normally finished, not cancel by evicted from the queue.
-            if(!request.isCanceled()) {
-                mCurrentRequestList.remove(request.getOriginUrl());
-            }
-        }
-    };
+    /** The default drawable resource Id before bitmap loaded. */
+    private int mDefaultResId = 0;
 
     /**
      * Constructs a new ArrayImageLoader.
      * @param requestQueue The RequestQueue to use for making image requests.
-     * @param successListener The listener interface for the async loaded bitmap.
-     * @param errorListener The listener interface for loading errors.
+     * @param loadListener The listener interface for the async loaded bitmap.
      * @param memoryCacheFactor The memory cache factor of the max app memory.
-     * @param maxRequestCount The max count of request queue.
+     * @param defaultResId The default drawable resource ID displayed when bitmap not loaded.
      */
-    public ArrayImageLoader(RequestQueue requestQueue, SuccessListener successListener, Response.ErrorListener errorListener, float memoryCacheFactor, int maxRequestCount) {
+    public ArrayImageLoader(RequestQueue requestQueue, LoadListener loadListener, float memoryCacheFactor, int defaultResId) {
         mRequestQueue = requestQueue;
-        mSuccessListener = successListener;
-        mErrorListener = errorListener;
+        mLoadListener = loadListener;
+        mDefaultResId = defaultResId;
         int maxMemory = (int) Runtime.getRuntime().maxMemory();
         mMemoryCache = new LruCache<String, Bitmap>((int) (maxMemory * memoryCacheFactor)){
             @Override
             protected int sizeOf(String key, Bitmap value) {
-                return value.getByteCount();
+                return (value.getRowBytes() * value.getHeight());
             }
         };
-        mCurrentRequestList = new ImageRequestList(maxRequestCount);
+        mCurrentRequestMap = new ImageRequestMap();
     }
 
     /** Constructs a new ArrayImageLoader with default memory factor and request count. */
-    public ArrayImageLoader(RequestQueue requestQueue, SuccessListener successListener, Response.ErrorListener errorListener) {
-        this(requestQueue, successListener, errorListener, DEFAULT_MEMORY_FACTOR, DEFAULT_REQUEST_COUNT);
+    public ArrayImageLoader(RequestQueue requestQueue, LoadListener loadListener) {
+        this(requestQueue, loadListener, DEFAULT_MEMORY_FACTOR, 0);
     }
 
     /** Return the bitmap decode config. */
@@ -136,86 +141,114 @@ public class ArrayImageLoader {
     }
 
     /**
+     * When {@link ImageView} has fixed width and height, cross-fade transition behaves nice.
+     * If {@link android.view.ViewGroup.LayoutParams} is {@code WRAP_CONTENT}, you'd better not use it.
+     * @param enabled True to enable cross fading, false otherwise.
+     */
+    public void setCrossFadeEnabled(boolean enabled) {
+        mCrossFade = enabled;
+    }
+
+    /**
      * Lode the bitmap from memory cache or the requestUrl.
      * If the memory cache exist the bitmap, just return it.
      * Else loading request from remotes URL, and return null.
      * */
-    public Bitmap loadBitmap(String requestUrl, int maxWidth, int maxHeight, ImageView.ScaleType scaleType) {
+    public void loadBitmap(ImageView imageView, String requestUrl, int maxWidth, int maxHeight, int position) {
+        if(!mLoadedArray.get(position, false)) {
+            // If this position has not loaded, then set the default resource.
+            if(0 != mDefaultResId) {
+                imageView.setImageResource(mDefaultResId);
+            }else {
+                imageView.setImageDrawable(null);
+            }
+        }
         // Ignore it if requestUrl is empty.
         if(TextUtils.isEmpty(requestUrl)) {
-            return null;
+            return;
         }
+        imageView.setTag(ULR_TAG_KEY, requestUrl);
+        imageView.setTag(POSITION_TAG_KEY, position);
 
         // Firstly find at the memory cache.
         Bitmap cache = mMemoryCache.get(requestUrl);
         if(null != cache) {
-            return cache;
+            if(mCrossFade && !mLoadedArray.get(position, false)) {
+                CrossFadeDrawable.setBitmap(imageView, cache);
+            }else {
+                imageView.setImageBitmap(cache);
+            }
+            return;
         }
 
         // Then make a image request
-        ImageRequest imageRequest = new ImageRequest(requestUrl, mLoadedListener, maxWidth, maxHeight, scaleType, mDecodeConfig, mErrorListener);
-        imageRequest.setFinishListener(mFinishListener);
+        ImageRequest imageRequest = new ImageRequest(requestUrl, new ResponseListener(imageView), maxWidth, maxHeight, imageView.getScaleType(), mDecodeConfig, mLoadListener);
+        imageRequest.setFinishListener(mLoadListener);
         imageRequest.setDefaultSoftTtl(mDefaultTTL);
         imageRequest.setDefaultTtl(mDefaultTTL);
 
-        ImageRequest previous = mCurrentRequestList.add(requestUrl, imageRequest);
-        // If there exists a previous same requestUrl request, do not loading again.
-        if(null == previous) {
+        if(mPaused) {
+            mWaitingRequestMap.put(imageView, imageRequest);
+        }else {
+            mCurrentRequestMap.put(imageView, imageRequest);
             mRequestQueue.add(imageRequest);
         }
-        return null;
+    }
+
+    /** Avoid the redundant loadings. */
+    public void pause() {
+        mPaused = true;
+    }
+
+    public synchronized void resume() {
+        if(!mPaused || mWaitingRequestMap.size() == 0) {
+            return;
+        }
+        if(VolleyLog.DEBUG) {
+            Log.d(TAG, "resume the waiting tasks.");
+        }
+        for(Entry<ImageView, ImageRequest> entry : mWaitingRequestMap.entrySet()) {
+            mCurrentRequestMap.put(entry.getKey(), entry.getValue());
+            mRequestQueue.add(entry.getValue());
+            if(VolleyLog.DEBUG) {
+                Log.d(TAG, "resume the task which position is " + entry.getKey().getTag(POSITION_TAG_KEY).toString());
+            }
+        }
+        mWaitingRequestMap.clear();
+        mPaused = false;
     }
 
     /** Clear the loading request and memory cache. */
     public void destroy() {
-        mCurrentRequestList.evictAll();
+        mCurrentRequestMap.evictAll();
         mMemoryCache.evictAll();
+        mLoadedArray.clear();
     }
 
-    /**
-     * RequestList is a fixed-length queue, All optional operations including add, remove element.
-     * It maintains an array of image request, use request url as the key.
-     *
-     * There has the following operations:
-     * 1. A new image request is added to the queue,
-     *      (1) it is exist, just move it to the head of queue.
-     *      (2) it is not exist, put it to the head of queue, if size is greater than the max size, remove and cancel the eldest request.
-     * 2. A exist image request is finished, so remove it from the queue.
-     */
-    private class ImageRequestList extends LruCache<String, ImageRequest> {
+    private class ResponseListener implements Response.Listener<Bitmap> {
 
-        public ImageRequestList(int maxSize) {
-            super(maxSize);
+        private ImageView imageView;
+
+        public ResponseListener(ImageView imageView) {
+            this.imageView = imageView;
         }
 
         @Override
-        protected int sizeOf(String key, ImageRequest value) {
-            return 1;
-        }
-
-        /**
-         * Add a new request to the queue.
-         * Note: you should not call put(K key, V value) method, it doesn't handle the same request url.
-         *
-         * @return the previous value mapped by {@code requestUrl}.
-         */
-        public ImageRequest add(String requestUrl, ImageRequest request) {
-            ImageRequest previous = get(requestUrl);
-            // there has a same request, just return it.
-            if(null != previous) {
-                return previous;
+        public void onResponse(String requestUrl, Bitmap bitmap) {
+            if(null == mMemoryCache.get(requestUrl)) {
+                mMemoryCache.put(requestUrl, bitmap);
             }
-
-            return put(requestUrl, request);
-        }
-
-        /** Cancel the request when it is evicted. */
-        @Override
-        protected void entryRemoved(boolean evicted, String key, ImageRequest oldValue,
-            ImageRequest newValue) {
-            // Do not loading request that was evicted from the queue
-            if(evicted && null != oldValue) {
-                oldValue.cancel();
+            if(TextUtils.equals(requestUrl, (CharSequence) imageView.getTag(ULR_TAG_KEY)) && imageView.isShown() && null != bitmap) {
+                if(mCrossFade) {
+                    CrossFadeDrawable.setBitmap(imageView, bitmap);
+                }else {
+                    imageView.setImageBitmap(bitmap);
+                }
+                int position = (int) imageView.getTag(POSITION_TAG_KEY);
+                mLoadedArray.put(position, true);
+            }
+            if(null != mLoadListener) {
+                mLoadListener.onSuccess(requestUrl, bitmap);
             }
         }
     }
