@@ -39,6 +39,43 @@ public class VolleyEx {
     /** Default on-disk cache directory. */
     private static final String DEFAULT_CACHE_DIR = "volleyex";
 
+    private static RequestQueue mRequestQueue;
+
+    public static synchronized void initialize(Context context) {
+        if(null == mRequestQueue) {
+            mRequestQueue = newRequestQueue(context);
+        }
+    }
+
+    public static synchronized void initialize(Context context, int maxDiskCacheBytes) {
+        if(null == mRequestQueue) {
+            mRequestQueue = newRequestQueue(context, maxDiskCacheBytes);
+        }
+    }
+
+    public static synchronized void initialize(Context context, File cacheDir, int maxDiskCacheBytes) {
+        if(null == mRequestQueue) {
+            mRequestQueue = newRequestQueue(context, cacheDir, maxDiskCacheBytes);
+        }
+    }
+
+    public static synchronized void initialize(Context context, HttpStack stack, File cacheDir, int maxDiskCacheBytes) {
+        if(null == mRequestQueue) {
+            mRequestQueue = newRequestQueue(context, stack, cacheDir, maxDiskCacheBytes);
+        }
+    }
+
+    public static RequestQueue getRequestQueue() {
+        return mRequestQueue;
+    }
+
+    public static void destroyRequestQueue() {
+        if(null != mRequestQueue) {
+            mRequestQueue.destroy();
+            mRequestQueue = null;
+        }
+    }
+
     /**
      * Creates a default instance of the worker pool and calls {@link RequestQueue#start()} on it.
      * You may set a maximum size of the disk cache in bytes.

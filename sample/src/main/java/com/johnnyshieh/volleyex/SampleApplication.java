@@ -15,6 +15,7 @@ package com.johnnyshieh.volleyex;
  * limitations under the License.
  */
 
+import com.android.volley.VolleyEx;
 import com.squareup.leakcanary.LeakCanary;
 
 import android.app.Application;
@@ -31,6 +32,6 @@ public class SampleApplication extends Application {
         super.onCreate();
         LeakCanary.install(this);
 
-        RequestQueueHolder.initilize(this);
+        VolleyEx.initialize(this);
     }
 }

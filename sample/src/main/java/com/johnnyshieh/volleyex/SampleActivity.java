@@ -1,5 +1,7 @@
 package com.johnnyshieh.volleyex;
 
+import com.android.volley.VolleyEx;
+
 import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
@@ -67,7 +69,7 @@ public class SampleActivity extends AppCompatActivity {
 
         @OnClick(R.id.clear_disk_cache)
         public void clickClearDiskCache() {
-            RequestQueueHolder.getInstance().getCache().clear();
+            VolleyEx.getRequestQueue().getCache().clear();
             Toast.makeText(getActivity(), "The Disk cache is clear.", Toast.LENGTH_SHORT).show();
         }
 

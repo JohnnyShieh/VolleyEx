@@ -21,3 +21,5 @@
 https://github.com/DWorkS/VolleyPlus
 
 https://github.com/bumptech/glide
+
+10. 图片第一次显示的动画

@@ -18,6 +18,7 @@ package com.johnnyshieh.volleyex;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.VolleyError;
+import com.android.volley.VolleyEx;
 import com.android.volley.image.SingleImageLoader;
 
 import android.app.Fragment;
@@ -62,7 +63,7 @@ public class SingleLoaderSampleFragment extends Fragment {
         View contentView = inflater.inflate(R.layout.fragment_simple_loader, container, false);
         ButterKnife.bind(this, contentView);
 
-        RequestQueue requestQueue = RequestQueueHolder.getInstance();
+        RequestQueue requestQueue = VolleyEx.getRequestQueue();
         mImageLoader1 = new SingleImageLoader(requestQueue, mImageView1,
             new SingleImageLoader.LoadListener() {
                 @Override

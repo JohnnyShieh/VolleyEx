@@ -15,6 +15,7 @@ package com.johnnyshieh.volleyex;
  * limitations under the License.
  */
 
+import com.android.volley.VolleyEx;
 import com.android.volley.image.ArrayImageLoader;
 import com.android.volley.image.AbsListViewPauseOnScrollListener;
 
@@ -51,7 +52,7 @@ public class ArrayLoaderSampleFragment extends Fragment {
         ButterKnife.bind(this, contentView);
 
         mAdapter = new MyAdapter();
-        mArrayImageLoader = new ArrayImageLoader(RequestQueueHolder.getInstance(), null, 0.125f, R.color.color_unloaded);
+        mArrayImageLoader = new ArrayImageLoader(VolleyEx.getRequestQueue(), null, 0.125f, R.color.color_unloaded);
         mGridView.setAdapter(mAdapter);
         mGridView.setOnScrollListener(new AbsListViewPauseOnScrollListener(mArrayImageLoader, null));
         return contentView;
