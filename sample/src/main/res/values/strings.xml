@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">VolleyExSample</string>
-    <string name="single_loader_sample_name">SingleImageLoaderSample</string>
-    <string name="array_loader_sample_name">ArrayImageLoaderSample</string>
+
+    <string name="single_loader_load_btn_name">Load At Random</string>
 </resources>

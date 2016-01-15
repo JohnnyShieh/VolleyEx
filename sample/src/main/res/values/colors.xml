@@ -4,5 +4,6 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
 
+    <color name="clickable_view_pressed_color">#339b9b9b</color>
     <color name="color_unloaded">#eee</color>
 </resources>

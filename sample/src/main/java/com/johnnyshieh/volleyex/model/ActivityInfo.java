@@ -1,6 +1,6 @@
-package com.johnnyshieh.volleyex;
+package com.johnnyshieh.volleyex.model;
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2016 Johnny Shieh Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,20 @@ package com.johnnyshieh.volleyex;
  * limitations under the License.
  */
 
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-
 /**
- * @author: Johnny Shieh
- * @date: 2015-12-08
+ * The model save the name and the class of activity.
+ *
+ * @author Johnny Shieh
+ * @version 1.0
  */
-public class ArrayLoaderSampleActivity extends AppCompatActivity {
+public class ActivityInfo {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_array_loader_sample);
+    public String displayName;
+
+    public Class<?> classInfo;
+
+    public ActivityInfo(String displayName, Class<?> classInfo) {
+        this.displayName = displayName;
+        this.classInfo = classInfo;
     }
 }

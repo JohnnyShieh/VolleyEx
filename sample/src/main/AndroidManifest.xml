@@ -11,7 +11,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <activity android:name=".SampleActivity" >
+        <activity android:name=".view.activity.MainActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -19,9 +19,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".SingleLoaderSampleActivity"/>
+        <activity android:name=".view.activity.SingleLoaderActivity"/>
 
-        <activity android:name=".ArrayLoaderSampleActivity"/>
+        <activity android:name=".view.activity.ArrayLoaderActivity"/>
 
     </application>
 

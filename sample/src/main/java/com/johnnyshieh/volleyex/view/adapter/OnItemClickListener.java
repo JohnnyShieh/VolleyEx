@@ -1,6 +1,6 @@
-package com.johnnyshieh.volleyex;
+package com.johnnyshieh.volleyex.view.adapter;
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2016 Johnny Shieh Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,16 @@ package com.johnnyshieh.volleyex;
  * limitations under the License.
  */
 
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import android.view.View;
 
 /**
- * @author: Johnny Shieh
- * @date: 2015-12-07
+ * The item click Listener for {@link android.support.v7.widget.RecyclerView}
+ *
+ * @author Johnny Shieh
+ * @version 1.0
  */
-public class SingleLoaderSampleActivity extends AppCompatActivity {
+public interface OnItemClickListener {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_single_loader_sample);
-    }
+    void onItemClick(View itemView, int position);
+
 }
