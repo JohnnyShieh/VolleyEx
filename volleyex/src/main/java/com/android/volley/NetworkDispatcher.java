@@ -16,6 +16,7 @@
 
 package com.android.volley;
 
+import com.android.volley.cache.Cache;
 import com.android.volley.image.ImageScheme;
 
 import android.annotation.TargetApi;

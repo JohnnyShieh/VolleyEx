@@ -16,6 +16,8 @@
 
 package com.android.volley;
 
+import com.android.volley.cache.Cache;
+
 import android.os.Process;
 
 import java.util.concurrent.BlockingQueue;

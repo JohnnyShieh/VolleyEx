@@ -18,8 +18,8 @@ package com.android.volley.image;
 import java.util.Locale;
 
 /**
- * @author: Johnny Shieh
- * @date: 2015-12-14
+ * @author Johnny Shieh
+ * @version 1.0
  *
  * Represents supported schemes(protocols) of URI. Provides convenient methods for work with schemes and URIs.
  * This is almost copy from Android-Universal-Image-Loader.

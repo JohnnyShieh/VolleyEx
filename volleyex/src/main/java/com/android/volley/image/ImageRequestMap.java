@@ -15,7 +15,7 @@ package com.android.volley.image;
  * limitations under the License.
  */
 
-import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.request.ImageRequest;
 
 import android.widget.ImageView;
 

@@ -23,6 +23,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import com.android.volley.VolleyLog.MarkerLog;
+import com.android.volley.cache.Cache;
 import com.android.volley.image.ImageScheme;
 import com.android.volley.toolbox.HttpHeaderParser;
 

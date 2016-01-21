@@ -16,6 +16,8 @@
 
 package com.android.volley;
 
+import com.android.volley.cache.Cache;
+
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -173,14 +175,6 @@ public class RequestQueue {
     }
 
     // added by Johnny Shieh : JohnnyShieh17@gamil.com
-    /**
-     * Call this method when app pause.
-     */
-    public void onPause() {
-        if(null != mCache) {
-            mCache.flush();
-        }
-    }
 
     /**
      * Call this method when app destroy.

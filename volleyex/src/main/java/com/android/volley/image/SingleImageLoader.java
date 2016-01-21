@@ -18,7 +18,7 @@ package com.android.volley.image;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.toolbox.ImageRequest;
+import com.android.volley.request.ImageRequest;
 
 import android.graphics.Bitmap;
 import android.text.TextUtils;

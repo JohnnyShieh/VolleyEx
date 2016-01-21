@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.volley.disklrucache;
+package com.android.volley.cache.disklrucache;
 
 import java.io.BufferedWriter;
 import java.io.Closeable;

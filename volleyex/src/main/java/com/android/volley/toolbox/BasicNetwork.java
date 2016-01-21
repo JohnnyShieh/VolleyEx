@@ -19,8 +19,8 @@ package com.android.volley.toolbox;
 import android.os.SystemClock;
 
 import com.android.volley.AuthFailureError;
-import com.android.volley.Cache;
-import com.android.volley.Cache.Entry;
+import com.android.volley.cache.Cache;
+import com.android.volley.cache.Cache.Entry;
 import com.android.volley.Network;
 import com.android.volley.NetworkError;
 import com.android.volley.NetworkResponse;

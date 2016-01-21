@@ -15,9 +15,8 @@ package com.android.volley.cache;
  * limitations under the License.
  */
 
-import com.android.volley.Cache;
 import com.android.volley.VolleyLog;
-import com.android.volley.disklrucache.DiskLruCache;
+import com.android.volley.cache.disklrucache.DiskLruCache;
 import com.android.volley.utils.MD5Utils;
 
 import java.io.EOFException;

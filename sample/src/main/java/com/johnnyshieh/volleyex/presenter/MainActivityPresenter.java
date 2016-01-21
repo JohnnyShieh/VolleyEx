@@ -15,6 +15,7 @@ package com.johnnyshieh.volleyex.presenter;
  * limitations under the License.
  */
 
+import com.android.volley.VolleyEx;
 import com.johnnyshieh.volleyex.R;
 import com.johnnyshieh.volleyex.view.adapter.SampleListAdapter;
 import com.johnnyshieh.volleyex.view.component.DividerItemDecoration;
@@ -58,5 +59,6 @@ public class MainActivityPresenter implements Presenter {
     @Override
     public void onDestroy() {
         ButterKnife.unbind(this);
+        VolleyEx.destroyRequestQueue();
     }
 }

@@ -36,6 +36,7 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
     private Drawable mDividerDrawable;
 
     public DividerItemDecoration(Context context) {
+        // Use the listDivider attr of the context theme as divider drawable.
         final TypedArray attrs = context.obtainStyledAttributes(ATTRS);
         mDividerDrawable = attrs.getDrawable(0);
         attrs.recycle();
@@ -48,8 +49,9 @@ public class DividerItemDecoration extends RecyclerView.ItemDecoration {
     @Override
     public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
         super.onDraw(c, parent, state);
+        // compute the divider's left and right.
         int left = parent.getPaddingLeft();
-        int right = parent.getPaddingRight();
+        int right = parent.getWidth() - parent.getPaddingRight();
 
         int childCount = parent.getChildCount();
         for(int i = 0; i < childCount; i ++) {

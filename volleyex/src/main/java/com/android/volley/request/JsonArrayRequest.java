@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.android.volley.toolbox;
+package com.android.volley.request;
 
 import com.android.volley.NetworkResponse;
-import com.android.volley.ParseError;
-import com.android.volley.Response;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
-import org.json.JSONException;
+import com.android.volley.toolbox.HttpHeaderParser;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
-
 /**
- * A request for retrieving a {@link JSONObject} response body at a given URL, allowing for an
- * optional {@link JSONObject} to be passed in as part of the request body.
+ * A request for retrieving a {@link JSONArray} response body at a given URL.
  */
-public class JsonObjectRequest extends JsonRequest<JSONObject> {
+public class JsonArrayRequest extends JsonRequest<JSONArray> {
 
     /**
      * Creates a new request.
@@ -41,8 +38,8 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
      * @param listener Listener to receive the JSON response
      * @param errorListener Error listener, or null to ignore errors.
      */
-    public JsonObjectRequest(int method, String url, String requestBody,
-                             Listener<JSONObject> listener, ErrorListener errorListener) {
+    public JsonArrayRequest(int method, String url, String requestBody,
+                            Listener<JSONArray> listener, ErrorListener errorListener) {
         super(method, url, requestBody, listener,
                 errorListener);
     }
@@ -53,7 +50,7 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
      * @param listener Listener to receive the JSON response
      * @param errorListener Error listener, or null to ignore errors.
      */
-    public JsonObjectRequest(String url, Listener<JSONObject> listener, ErrorListener errorListener) {
+    public JsonArrayRequest(String url, Listener<JSONArray> listener, ErrorListener errorListener) {
         super(Method.GET, url, null, listener, errorListener);
     }
 
@@ -64,8 +61,23 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
      * @param listener Listener to receive the JSON response
      * @param errorListener Error listener, or null to ignore errors.
      */
-    public JsonObjectRequest(int method, String url, Listener<JSONObject> listener, ErrorListener errorListener) {
+    public JsonArrayRequest(int method, String url, Listener<JSONArray> listener, ErrorListener errorListener) {
         super(method, url, null, listener, errorListener);
+    }
+
+    /**
+     * Creates a new request.
+     * @param method the HTTP method to use
+     * @param url URL to fetch the JSON from
+     * @param jsonRequest A {@link JSONArray} to post with the request. Null is allowed and
+     *   indicates no parameters will be posted along with request.
+     * @param listener Listener to receive the JSON response
+     * @param errorListener Error listener, or null to ignore errors.
+     */
+    public JsonArrayRequest(int method, String url, JSONArray jsonRequest, 
+            Listener<JSONArray> listener, ErrorListener errorListener) {
+        super(method, url, (jsonRequest == null) ? null : jsonRequest.toString(), listener,
+                errorListener);
     }
 
     /**
@@ -77,8 +89,8 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
      * @param listener Listener to receive the JSON response
      * @param errorListener Error listener, or null to ignore errors.
      */
-    public JsonObjectRequest(int method, String url, JSONObject jsonRequest,
-            Listener<JSONObject> listener, ErrorListener errorListener) {
+    public JsonArrayRequest(int method, String url, JSONObject jsonRequest,
+                            Listener<JSONArray> listener, ErrorListener errorListener) {
         super(method, url, (jsonRequest == null) ? null : jsonRequest.toString(), listener,
             errorListener);
     }
@@ -87,21 +99,33 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
      * Constructor which defaults to <code>GET</code> if <code>jsonRequest</code> is
      * <code>null</code>, <code>POST</code> otherwise.
      *
-     * @see #JsonObjectRequest(int, String, JSONObject, Listener, ErrorListener)
+     * @see #JsonArrayRequest(int, String, JSONArray, Listener, ErrorListener)
      */
-    public JsonObjectRequest(String url, JSONObject jsonRequest, Listener<JSONObject> listener,
-            ErrorListener errorListener) {
+    public JsonArrayRequest(String url, JSONArray jsonRequest, Listener<JSONArray> listener,
+                            ErrorListener errorListener) {
+        this(jsonRequest == null ? Method.GET : Method.POST, url, jsonRequest,
+                listener, errorListener);
+    }
+
+    /**
+     * Constructor which defaults to <code>GET</code> if <code>jsonRequest</code> is
+     * <code>null</code>, <code>POST</code> otherwise.
+     *
+     * @see #JsonArrayRequest(int, String, JSONObject, Listener, ErrorListener)
+     */
+    public JsonArrayRequest(String url, JSONObject jsonRequest, Listener<JSONArray> listener,
+                             ErrorListener errorListener) {
         this(jsonRequest == null ? Method.GET : Method.POST, url, jsonRequest,
                 listener, errorListener);
     }
 
     /*@Override
-    protected Response<JSONObject> parseNetworkResponse(NetworkResponse response) {
+    protected Response<JSONArray> parseNetworkResponse(NetworkResponse response) {
         try {
-            String jsonString =
-                new String(response.data, HttpHeaderParser.parseCharset(response.headers));
-            return Response.success(new JSONObject(jsonString),
-                HttpHeaderParser.parseCacheHeaders(response));
+            String jsonString = new String(response.data,
+                    HttpHeaderParser.parseCharset(response.headers, PROTOCOL_CHARSET));
+            return Response.success(new JSONArray(jsonString),
+                    HttpHeaderParser.parseCacheHeaders(response));
         } catch (UnsupportedEncodingException e) {
             return Response.error(new ParseError(e));
         } catch (JSONException je) {
@@ -111,10 +135,10 @@ public class JsonObjectRequest extends JsonRequest<JSONObject> {
 
     // modified by Johnny Shieh : JohnnyShieh17@gamil.com
     @Override
-    protected JSONObject parseResponseData(NetworkResponse response) throws Exception {
+    protected JSONArray parseResponseData(NetworkResponse response) throws Exception {
         String jsonString = new String(response.data,
             HttpHeaderParser.parseCharset(response.headers, PROTOCOL_CHARSET));
-        return new JSONObject(jsonString);
+        return new JSONArray(jsonString);
     }
     // modified end
 }

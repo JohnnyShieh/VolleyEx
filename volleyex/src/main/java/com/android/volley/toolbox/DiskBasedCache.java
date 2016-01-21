@@ -18,7 +18,7 @@ package com.android.volley.toolbox;
 
 import android.os.SystemClock;
 
-import com.android.volley.Cache;
+import com.android.volley.cache.Cache;
 import com.android.volley.VolleyLog;
 
 import java.io.BufferedInputStream;

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.volley.toolbox;
+package com.android.volley.cache;
 
-import com.android.volley.Cache;
+import com.android.volley.cache.Cache;
 
 /**
  * A cache that doesn't.

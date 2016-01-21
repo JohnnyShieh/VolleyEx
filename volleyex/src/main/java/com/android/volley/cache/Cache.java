@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.volley;
+package com.android.volley.cache;
 
 import java.util.Collections;
 import java.util.Map;

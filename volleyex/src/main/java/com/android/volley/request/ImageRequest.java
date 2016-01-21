@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.volley.toolbox;
+package com.android.volley.request;
 
 import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.NetworkResponse;
@@ -22,6 +22,7 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyLog;
 import com.android.volley.image.ImageScheme;
+import com.android.volley.toolbox.ContentLengthInputStream;
 import com.android.volley.utils.IOUtils;
 
 import android.annotation.TargetApi;
