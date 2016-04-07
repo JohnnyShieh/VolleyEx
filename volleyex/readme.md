@@ -23,3 +23,7 @@ https://github.com/DWorkS/VolleyPlus
 https://github.com/bumptech/glide
 
 10. 图片第一次显示的动画
+
+11. 使用 okhttp or not
+
+12. 学习retrofit 设计

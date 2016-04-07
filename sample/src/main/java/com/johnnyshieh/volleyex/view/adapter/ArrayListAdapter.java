@@ -67,7 +67,7 @@ public class ArrayListAdapter extends RecyclerView.Adapter<ArrayListAdapter.View
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         mArrayImageLoader.loadBitmap(holder.imageView, mImageUrlList.get(position), holder.imageView.getMeasuredWidth(),
-            holder.imageView.getMeasuredHeight(), position);
+            holder.imageView.getMeasuredHeight());
     }
 
     @Override

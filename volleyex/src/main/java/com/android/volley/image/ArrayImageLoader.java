@@ -1,6 +1,6 @@
 package com.android.volley.image;
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2015 Johnny Shieh Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,14 +25,14 @@ import android.graphics.Bitmap;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.widget.ImageView;
 
+import java.util.HashSet;
 import java.util.Map.Entry;
 
 /**
- * @author: Johnny Shieh
- * @date: 2015-12-02
+ * @author Johnny Shieh
+ * @version 1.0
  *
  * Helper that handles an array of request from remote URLs
  */
@@ -52,14 +52,12 @@ public class ArrayImageLoader {
     private static final Bitmap.Config DEFAULT_DECODE_CONFIG = Bitmap.Config.RGB_565;
 
     /** The default Time to live of image cache. */
-    private static final long DEFAULT_IMAGE_TTL = 1 * 24 * 3600 * 1000;
+    private static final long DEFAULT_IMAGE_TTL = 24 * 3600 * 1000;
 
     /** The default memory cache factor of max memory. */
     private static final float DEFAULT_MEMORY_FACTOR = 0.125f;
 
     private static final int ULR_TAG_KEY = TAG.hashCode();
-
-    private static final int POSITION_TAG_KEY = TAG.hashCode() + 1;
 
     /** RequestQueue for dispatching ImageRequests onto. */
     private final RequestQueue mRequestQueue;
@@ -70,8 +68,8 @@ public class ArrayImageLoader {
     /** Memory cache for the loaded bitmap. */
     private LruCache<String, Bitmap> mMemoryCache;
 
-    /** The array stores the value whether the position is loaded or not. */
-    protected SparseBooleanArray mLoadedArray = new SparseBooleanArray();
+    /** The array stores the value whether the url is loaded or not. */
+    protected HashSet<String> mLoadedSet = new HashSet<>();
 
     /** The queue of image requests currently being processed by this RequestQueue. */
     private final ImageRequestMap mCurrentRequestMap;
@@ -143,13 +141,17 @@ public class ArrayImageLoader {
         mCrossFade = enabled;
     }
 
+    public void loadBitmap(ImageView imageView, String requestUrl) {
+        loadBitmap(imageView, requestUrl, -1, -1);
+    }
+
     /**
      * Lode the bitmap from memory cache or the requestUrl.
      * If the memory cache exist the bitmap, just return it.
      * Else loading request from remotes URL, and return null.
      * */
-    public void loadBitmap(ImageView imageView, String requestUrl, int maxWidth, int maxHeight, int position) {
-        if(!mLoadedArray.get(position, false)) {
+    public void loadBitmap(ImageView imageView, String requestUrl, int maxWidth, int maxHeight) {
+        if(!mLoadedSet.contains(requestUrl)) {
             // If this position has not loaded, then set the default resource.
             if(0 != mDefaultResId) {
                 imageView.setImageResource(mDefaultResId);
@@ -162,12 +164,11 @@ public class ArrayImageLoader {
             return;
         }
         imageView.setTag(ULR_TAG_KEY, requestUrl);
-        imageView.setTag(POSITION_TAG_KEY, position);
 
         // Firstly find at the memory cache.
         Bitmap cache = mMemoryCache.get(requestUrl);
         if(null != cache) {
-            if(mCrossFade && !mLoadedArray.get(position, false)) {
+            if(mCrossFade && !mLoadedSet.contains(requestUrl)) {
                 CrossFadeDrawable.setBitmap(imageView, cache);
             }else {
                 imageView.setImageBitmap(cache);
@@ -205,7 +206,7 @@ public class ArrayImageLoader {
             mCurrentRequestMap.put(entry.getKey(), entry.getValue());
             mRequestQueue.add(entry.getValue());
             if(VolleyLog.DEBUG) {
-                Log.d(TAG, "resume the task which position is " + entry.getKey().getTag(POSITION_TAG_KEY).toString());
+                Log.d(TAG, "resume the task which position is " + entry.getKey().getTag(ULR_TAG_KEY).toString());
             }
         }
         mWaitingRequestMap.clear();
@@ -216,7 +217,7 @@ public class ArrayImageLoader {
     public void destroy() {
         mCurrentRequestMap.evictAll();
         mMemoryCache.evictAll();
-        mLoadedArray.clear();
+        mLoadedSet.clear();
     }
 
     private class ResponseListener implements Response.Listener<Bitmap> {
@@ -238,8 +239,7 @@ public class ArrayImageLoader {
                 }else {
                     imageView.setImageBitmap(bitmap);
                 }
-                int position = (int) imageView.getTag(POSITION_TAG_KEY);
-                mLoadedArray.put(position, true);
+                mLoadedSet.add(requestUrl);
             }
             if(null != mLoadListener) {
                 mLoadListener.onSuccess(requestUrl, bitmap);

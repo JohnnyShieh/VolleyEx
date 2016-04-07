@@ -1,6 +1,6 @@
 package com.android.volley.image;
 /*
- * Copyright (C) 2015 The Android Open Source Project
+ * Copyright (C) 2015 Johnny Shieh Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 /**
- * @author: Johnny Shieh
- * @date: 2015-12-02
+ * @author Johnny Shieh
+ * @version 1.0
  *
  * Helper that handles loading images from remote URLs and update the ImageView.
  */
@@ -36,8 +36,8 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
     /** The default decode config for bitmap. */
     private static final Bitmap.Config DEFAULT_DECODE_CONFIG = Bitmap.Config.RGB_565;
 
-    /** The default Time to live of image cache. */
-    private static final long DEFAULT_IMAGE_TTL = 1 * 24 * 3600 * 1000;
+    /** The default Time to live of image cache, one day. */
+    private static final long DEFAULT_IMAGE_TTL = 24 * 3600 * 1000;
 
     /** RequestQueue for dispatching ImageRequests onto. */
     protected final RequestQueue mRequestQueue;
@@ -157,8 +157,14 @@ public class SingleImageLoader implements Response.Listener<Bitmap>{
         int maxHeight = 0;
         ViewGroup.LayoutParams layoutParams = mImageView.getLayoutParams();
         if(null != layoutParams) {
-            maxWidth = (layoutParams.width == ViewGroup.LayoutParams.WRAP_CONTENT) ? 0 : mImageView.getMeasuredWidth();
-            maxHeight = (layoutParams.height == ViewGroup.LayoutParams.WRAP_CONTENT) ? 0 : mImageView.getMeasuredHeight();
+            if(layoutParams.width != ViewGroup.LayoutParams.WRAP_CONTENT
+                && (mImageView.getMeasuredWidth() > mImageView.getPaddingLeft() + mImageView.getPaddingRight())) {
+                maxWidth = mImageView.getMeasuredWidth() - mImageView.getPaddingLeft() - mImageView.getPaddingRight();
+            }
+            if(layoutParams.height != ViewGroup.LayoutParams.WRAP_CONTENT
+                && (mImageView.getMeasuredHeight() > mImageView.getPaddingTop() + mImageView.getPaddingBottom())) {
+                maxHeight = mImageView.getMeasuredHeight() - mImageView.getPaddingTop() - mImageView.getPaddingBottom();
+            }
         }
         load(requestUrl, maxWidth, maxHeight, config);
     }
